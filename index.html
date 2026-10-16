@@ -37,6 +37,12 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        window.firebaseModules = { initializeApp, getFirestore, collection, getDocs, setDoc, doc, updateDoc };
+    </script>
 
     <style>
         body {
@@ -95,6 +101,18 @@
             youtubeChannelUrl: "https://www.youtube.com/@EngMansour", // رابط قناتك
             defaultAdminPin: "Mansour2026" // كلمة السر الافتراضية للوحة التحكم
         };
+        // ==========================================
+        // ☁️ إعدادات Firebase الخاصة بمنصة المهندس منصور
+        // ==========================================
+         const firebaseConfig = {
+            apiKey: "AIzaSyCQn7yVkEuu8Vn_lApdc7puhCCTc1rhUpM",
+            authDomain: "mansouracademy-d47f1.firebaseapp.com",
+            projectId: "mansouracademy-d47f1",
+            storageBucket: "mansouracademy-d47f1.firebasestorage.app",
+            messagingSenderId: "597422895185",
+            appId: "1:597422895185:web:536b1624fcd626f25c8870",
+            measurementId: "G-6ZFY3DVQ6D"
+};
 
         // ==========================================
         // 📚 الكورسات والحصص الافتراضية (يمكنك تعديلها من هنا أو من لوحة الأدمن)
