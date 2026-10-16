@@ -37,11 +37,12 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Firebase SDKs -->
+    
+    <!-- Firebase SDKs (Modular v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, setDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        window.firebaseModules = { initializeApp, getFirestore, collection, getDocs, setDoc, doc, updateDoc };
+        import { getFirestore, collection, getDocs, setDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        window.firebaseModules = { initializeApp, getFirestore, collection, getDocs, setDoc, doc, updateDoc, onSnapshot };
     </script>
 
     <style>
@@ -51,21 +52,10 @@
             color: #F8FAFC;
             overflow-x: hidden;
         }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0B0F19;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1E293B;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #06B6D4;
-        }
-        /* Protect Video iframe top link area slightly */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0B0F19; }
+        ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06B6D4; }
         .video-wrapper {
             position: relative;
             padding-bottom: 56.25%;
@@ -90,21 +80,16 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ==========================================
-        // 🛠️ إعدادات المنصة الأساسية (عدّل بياناتك من هنا بسهولة!)
-        // ==========================================
         const SITE_CONFIG = {
             platformName: "Eng Mansour || مبرمج المستقبل",
             instructorTitle: "المهندس منصور",
-            whatsappNumber: "201148475702", // ضع رقم الواتساب الخاص بك هنا مسبوقاً بـ 20
-            vodafoneCashNumber: "01097762007", // ضع رقم فودافون كاش أو انستا باي هنا
-            youtubeChannelUrl: "https://www.youtube.com/@EngMansour", // رابط قناتك
-            defaultAdminPin: "Mansour2026" // كلمة السر الافتراضية للوحة التحكم
+            whatsappNumber: "201148475702",
+            vodafoneCashNumber: "01097762007",
+            youtubeChannelUrl: "https://www.youtube.com/@EngMansour",
+            defaultAdminPin: "Mansour2026"
         };
-        // ==========================================
-        // ☁️ إعدادات Firebase الخاصة بمنصة المهندس منصور
-        // ==========================================
-         const firebaseConfig = {
+
+        const firebaseConfig = {
             apiKey: "AIzaSyCQn7yVkEuu8Vn_lApdc7puhCCTc1rhUpM",
             authDomain: "mansouracademy-d47f1.firebaseapp.com",
             projectId: "mansouracademy-d47f1",
@@ -112,15 +97,12 @@
             messagingSenderId: "597422895185",
             appId: "1:597422895185:web:536b1624fcd626f25c8870",
             measurementId: "G-6ZFY3DVQ6D"
-};
+        };
 
-        // ==========================================
-        // 📚 الكورسات والحصص الافتراضية (يمكنك تعديلها من هنا أو من لوحة الأدمن)
-        // ==========================================
         const INITIAL_COURSES = [
             {
                 id: "sec1-prog-2026",
-                title: "منهج البرمجة والذكاء الاصطناعي- الصف الأول الثانوي",
+                title: "منهج البرمجة والذكاء الاصطناعي - الصف الأول الثانوي",
                 stage: "الصف الأول الثانوي",
                 price: 150,
                 thumbnail: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=900&q=80",
@@ -129,9 +111,11 @@
                 lessons: [
                     {
                         id: "l101",
-                        title: "الحصة 1 (مجانية):ما هي المعلومات؟",
+                        title: "الحصة 1 (مجانية): ما هي المعلومات؟",
                         duration: "42 دقيقة",
-                        videoId: "A3YCcbsh9kHugONH", // ضع هنا الـ Video ID لفيديو يوتيوب غير المدرج
+                        videoId: "A3YCcbsh9kHugONH",
+                        thumbnail: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80",
+                        price: 0,
                         isFree: true,
                         pdfUrl: "https://drive.google.com/",
                         quizQuestion: "ما هي الخطوة الأولى قبل كتابة الكود البرمجي؟",
@@ -143,21 +127,12 @@
                         title: "الحصة 2: المتغيرات وأنواع البيانات وبناء أول برنامج",
                         duration: "50 دقيقة",
                         videoId: "rfscVS0vtbw",
+                        thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80",
+                        price: 35,
                         isFree: false,
                         pdfUrl: "https://drive.google.com/",
                         quizQuestion: "أي مما يلي يُستخدم لتخزين النصوص في البرمجة؟",
                         quizOptions: ["Integer", "String", "Boolean"],
-                        correctOption: 1
-                    },
-                    {
-                        id: "l103",
-                        title: "الحصة 3: الجمل الشرطية (If / Else) والتدريبات",
-                        duration: "55 دقيقة",
-                        videoId: "rfscVS0vtbw",
-                        isFree: false,
-                        pdfUrl: "https://drive.google.com/",
-                        quizQuestion: "متى يتم تنفيذ كود Else؟",
-                        quizOptions: ["عند تحقق الشرط الأساسي", "عند عدم تحقق الشرط الأساسي", "دائماً في كل الحالات"],
                         correctOption: 1
                     }
                 ]
@@ -176,138 +151,75 @@
                         title: "الحصة 1 (مجانية): تاريخ تكنولوجيا المعلومات والتحول الاجتماعي",
                         duration: "45 دقيقة",
                         videoId: "rfscVS0vtbw",
+                        thumbnail: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=600&q=80",
+                        price: 0,
                         isFree: true,
                         pdfUrl: "https://drive.google.com/",
                         quizQuestion: "ما هو الهدف الأساسي من تقنيات تعلم الآلة (Machine Learning)؟",
                         quizOptions: ["جعل الحاسوب يتعلم من البيانات دون برمجة صريحة لكل حالة", "زيادة سرعة مروحة المعالج", "حذف الملفات المؤقتة"],
                         correctOption: 0
-                    },
-                    {
-                        id: "l202",
-                        title: "الحصة 2: القضايا الأخلاقية المتعلقة بالذكاء الاصطناعي والانحياز الخوارزمي",
-                        duration: "52 دقيقة",
-                        videoId: "rfscVS0vtbw",
-                        isFree: false,
-                        pdfUrl: "https://drive.google.com/",
-                        quizQuestion: "ماذا يقصد بالانحياز الخوارزمي (Algorithmic Bias)؟",
-                        quizOptions: ["سرعة تنفيذ الكود", "نتائج غير عادلة بسبب بيانات تدريب غير متوازنة", "تشفر البيانات لحمايتها"],
-                        correctOption: 1
-                    },
-                    {
-                        id: "l203",
-                        title: "الحصة 3: هياكل البيانات وتطبيقات بايثون في الذكاء الاصطناعي",
-                        duration: "60 دقيقة",
-                        videoId: "rfscVS0vtbw",
-                        isFree: false,
-                        pdfUrl: "https://drive.google.com/",
-                        quizQuestion: "أي لغة برمجة تُعد الأكثر انتشاراً في الذكاء الاصطناعي؟",
-                        quizOptions: ["HTML", "Python", "CSS"],
-                        correctOption: 1
-                    }
-                ]
-            },
-            {
-                id: "future-coder-bootcamp",
-                title: "معسكر تأسيس مبرمج المستقبل (Python & C++ & OOP)",
-                stage: "تأسيس البرمجة",
-                price: 250,
-                thumbnail: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=900&q=80",
-                badge: "تأسيس احترافي 💻",
-                description: "كورس تأسيسي شامل ينقلك من الصفر إلى إتقان البرمجة الكائنية (OOP) وحل المشكلات البرمجية وبناء المشاريع.",
-                lessons: [
-                    {
-                        id: "l301",
-                        title: "الحصة 1 (مجانية): كيف يفكر المبرمج؟ وخريطة طريق تعلم البرمجة",
-                        duration: "38 دقيقة",
-                        videoId: "rfscVS0vtbw",
-                        isFree: true,
-                        pdfUrl: "https://drive.google.com/",
-                        quizQuestion: "ما هو مفهوم الـ OOP؟",
-                        quizOptions: ["البرمجة الكائنية التوجه", "تصميم قواعد البيانات فقط", "بروتوكول نقل الملفات"],
-                        correctOption: 0
-                    },
-                    {
-                        id: "l302",
-                        title: "الحصة 2: الكلاسات والكائنات (Classes & Objects) والـ Encapsulation",
-                        duration: "65 دقيقة",
-                        videoId: "rfscVS0vtbw",
-                        isFree: false,
-                        pdfUrl: "https://drive.google.com/",
-                        quizQuestion: "ما فائدة الكبسلة (Encapsulation) في الـ OOP؟",
-                        quizOptions: ["حماية البيانات وإخفاء التفاصيل الداخلية للكائن", "إبطاء البرنامج", "تكرار الكود"],
-                        correctOption: 0
                     }
                 ]
             }
         ];
 
-        // الأكواد الجاهزة للتجربة السريعة
-        const INITIAL_CODES = [
-            { code: "MNS-2026", courseId: "ALL", used: false, studentName: "كود شامل تجريبي" },
-            { code: "SEC1-1001", courseId: "sec1-prog-2026", used: false, studentName: "" },
-            { code: "BAC2-2002", courseId: "sec2-bac-ai-2026", used: false, studentName: "" }
-        ];
-
-        // مساعد لاستخراج معرف فيديو يوتيوب (Video ID) من أي رابط يوتيوب كامل
         function extractYouTubeId(input) {
             if (!input) return "";
             const trimmed = input.trim();
-            if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes(".")) {
-                return trimmed;
-            }
+            if (trimmed.length === 11 && !trimmed.includes("/") && !trimmed.includes(".")) return trimmed;
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
             const match = trimmed.match(regExp);
             return (match && match[2].length === 11) ? match[2] : trimmed;
         }
 
         function App() {
-            // حفظ واسترجاع البيانات من LocalStorage
             const [courses, setCourses] = useState(() => {
-                const saved = localStorage.getItem("mansour_courses_v1");
+                const saved = localStorage.getItem("mansour_courses_v3");
                 return saved ? JSON.parse(saved) : INITIAL_COURSES;
             });
 
-            const [activationCodes, setActivationCodes] = useState(() => {
-                const saved = localStorage.getItem("mansour_codes_v1");
-                return saved ? JSON.parse(saved) : INITIAL_CODES;
-            });
-
-            const [unlockedCourses, setUnlockedCourses] = useState(() => {
-                const saved = localStorage.getItem("mansour_unlocked_v1");
+            const [activationCodes, setActivationCodes] = useState([]);
+            const [unlockedItems, setUnlockedItems] = useState(() => {
+                const saved = localStorage.getItem("mansour_unlocked_items_v3");
                 return saved ? JSON.parse(saved) : [];
             });
 
-            const [adminPin, setAdminPin] = useState(() => {
-                return localStorage.getItem("mansour_admin_pin") || SITE_CONFIG.defaultAdminPin;
-            });
-
-            // حالات الواجهة
             const [selectedStage, setSelectedStage] = useState("الكل");
             const [activeCourse, setActiveCourse] = useState(null);
             const [activeLesson, setActiveLesson] = useState(null);
             const [showPaymentModal, setShowPaymentModal] = useState(false);
-            const [targetCourseForCode, setTargetCourseForCode] = useState(null);
+            const [targetItemForCode, setTargetItemForCode] = useState(null); // Course or Lesson
             const [codeInput, setCodeInput] = useState("");
             const [codeMessage, setCodeMessage] = useState({ type: "", text: "" });
             const [quizSelected, setQuizSelected] = useState(null);
 
-            // حالات لوحة تحكم الأدمن السرية
+            // لوحة الأدمن
             const [showAdminLogin, setShowAdminLogin] = useState(false);
             const [pinInput, setPinInput] = useState("");
             const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
-            const [adminTab, setAdminTab] = useState("codes"); // codes | lessons | courses | export
-
-            // حقول نماذج الأدمن
-            const [genCourseId, setGenCourseId] = useState("ALL");
+            const [adminTab, setAdminTab] = useState("lessons"); // lessons | codes | courses
+            const [genTargetId, setGenTargetId] = useState("ALL");
             const [genCount, setGenCount] = useState(5);
+            const [isFirebaseSyncing, setIsFirebaseSyncing] = useState(false);
+
+            // نموذج إضافة حصة شاملة
             const [newLesson, setNewLesson] = useState({
                 courseId: INITIAL_COURSES[0].id,
                 title: "",
                 duration: "45 دقيقة",
                 videoUrl: "",
+                thumbnail: "",
+                price: 35,
                 pdfUrl: "",
-                isFree: false
+                isFree: false,
+                quizQuestion: "",
+                quizOpt0: "",
+                quizOpt1: "",
+                quizOpt2: "",
+                correctOpt: 0
             });
+
+            // نموذج إضافة كورس جديد
             const [newCourse, setNewCourse] = useState({
                 title: "",
                 stage: "الصف الأول الثانوي",
@@ -317,150 +229,238 @@
                 description: ""
             });
 
-            // تحديث LocalStorage عند أي تعديل
+            // مزامنة حية مع Firebase Firestore
             useEffect(() => {
-                localStorage.setItem("mansour_courses_v1", JSON.stringify(courses));
+                let unsubscribe = () => {};
+                if (window.firebaseModules && firebaseConfig.apiKey) {
+                    try {
+                        const { initializeApp, getFirestore, collection, onSnapshot, getDocs, setDoc, doc } = window.firebaseModules;
+                        const app = initializeApp(firebaseConfig);
+                        const db = getFirestore(app);
+
+                        // مزامنة الأكواد
+                        unsubscribe = onSnapshot(collection(db, "codes"), (snapshot) => {
+                            const cloudCodes = [];
+                            snapshot.forEach(docSnap => cloudCodes.push(docSnap.data()));
+                            setActivationCodes(cloudCodes);
+                        });
+
+                        // مزامنة الكورسات والحصص
+                        getDocs(collection(db, "courses")).then(snap => {
+                            if (!snap.empty) {
+                                const cloudCourses = [];
+                                snap.forEach(d => cloudCourses.push(d.data()));
+                                setCourses(cloudCourses);
+                                localStorage.setItem("mansour_courses_v3", JSON.stringify(cloudCourses));
+                            } else {
+                                INITIAL_COURSES.forEach(async (c) => {
+                                    try { await setDoc(doc(db, "courses", c.id), c); } catch(e){}
+                                });
+                            }
+                        }).catch(console.error);
+
+                    } catch (err) {
+                        console.log("Firebase sync err:", err);
+                    }
+                }
+                return () => unsubscribe();
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem("mansour_courses_v3", JSON.stringify(courses));
             }, [courses]);
 
             useEffect(() => {
-                localStorage.setItem("mansour_codes_v1", JSON.stringify(activationCodes));
-            }, [activationCodes]);
+                localStorage.setItem("mansour_unlocked_items_v3", JSON.stringify(unlockedItems));
+            }, [unlockedItems]);
 
-            useEffect(() => {
-                localStorage.setItem("mansour_unlocked_v1", JSON.stringify(unlockedCourses));
-            }, [unlockedCourses]);
-
-            // التحقق هل الكورس مفتوح للطالب
-            const isCourseUnlocked = (courseId) => {
-                return unlockedCourses.includes("ALL") || unlockedCourses.includes(courseId);
+            const isItemUnlocked = (courseId, lessonId) => {
+                if (unlockedItems.includes("ALL") || unlockedItems.includes(courseId)) return true;
+                if (lessonId && unlockedItems.includes(lessonId)) return true;
+                return false;
             };
 
-            // تفعيل الكود للطالب
-            const handleActivateCode = (e) => {
+            // تفعيل الكود السحابي
+            const handleActivateCode = async (e) => {
                 e.preventDefault();
                 const cleaned = codeInput.trim().toUpperCase();
                 if (!cleaned) {
-                    setCodeMessage({ type: "error", text: "يرجى كتابة كود التفعيل أولاً" });
+                    setCodeMessage({ type: "error", text: "يرجى كتابة كود التفعيل" });
                     return;
                 }
 
-                const foundIndex = activationCodes.findIndex(c => c.code.toUpperCase() === cleaned);
-                if (foundIndex === -1) {
-                    setCodeMessage({ type: "error", text: "كود غير صحيح! تأكد من نقل الحروف والأرقام بشكل سليم أو تواصل مع المهندس منصور." });
-                    return;
+                setIsFirebaseSyncing(true);
+                try {
+                    const { initializeApp, getFirestore, doc, updateDoc, collection, getDocs } = window.firebaseModules || {};
+                    let currentCodes = activationCodes;
+
+                    if (window.firebaseModules) {
+                        const db = getFirestore(initializeApp(firebaseConfig));
+                        const freshSnap = await getDocs(collection(db, "codes"));
+                        if (!freshSnap.empty) {
+                            currentCodes = [];
+                            freshSnap.forEach(d => currentCodes.push(d.data()));
+                            setActivationCodes(currentCodes);
+                        }
+                    }
+
+                    const foundCode = currentCodes.find(c => c.code.toUpperCase() === cleaned);
+                    if (!foundCode) {
+                        setCodeMessage({ type: "error", text: "❌ كود غير صحيح! تأكد من كتابته بشكل سليم أو تواصل مع المهندس منصور." });
+                        setIsFirebaseSyncing(false);
+                        return;
+                    }
+
+                    if (foundCode.used) {
+                        setCodeMessage({ type: "error", text: "🔒 هذا الكود تم استخدامه وتفعيله مسبقاً! كل كود صالح لمرة واحدة فقط." });
+                        setIsFirebaseSyncing(false);
+                        return;
+                    }
+
+                    if (window.firebaseModules) {
+                        const db = getFirestore(initializeApp(firebaseConfig));
+                        await updateDoc(doc(db, "codes", foundCode.code), {
+                            used: true,
+                            usedAt: new Date().toISOString()
+                        });
+                    }
+
+                    const updatedUnlocked = [...unlockedItems, foundCode.targetId];
+                    setUnlockedItems(updatedUnlocked);
+                    localStorage.setItem("mansour_unlocked_items_v3", JSON.stringify(updatedUnlocked));
+
+                    setCodeMessage({ type: "success", text: "🎉 تم التفعيل بنجاح! تم فتح المحتوى لك على هذا الجهاز." });
+                    setCodeInput("");
+                    setTimeout(() => {
+                        setShowPaymentModal(false);
+                        setCodeMessage({ type: "", text: "" });
+                    }, 1700);
+
+                } catch (err) {
+                    console.error(err);
+                    setCodeMessage({ type: "error", text: "حدث خطأ في الاتصال. يرجى مراجعة اتصال الإنترنت." });
+                } finally {
+                    setIsFirebaseSyncing(false);
                 }
-
-                const foundCode = activationCodes[foundIndex];
-                if (!unlockedCourses.includes(foundCode.courseId)) {
-                    setUnlockedCourses([...unlockedCourses, foundCode.courseId]);
-                }
-
-                // تعليم الكود كمستخدم في القائمة
-                const updatedCodes = [...activationCodes];
-                updatedCodes[foundIndex].used = true;
-                setActivationCodes(updatedCodes);
-
-                setCodeMessage({ type: "success", text: "🎉 تم تفعيل الكورس بنجاح! يمكنك الآن مشاهدة جميع الحصص والملازم." });
-                setCodeInput("");
-                setTimeout(() => {
-                    setShowPaymentModal(false);
-                    setCodeMessage({ type: "", text: "" });
-                }, 1800);
             };
 
-            // توليد أكواد جديدة في لوحة الأدمن
-            const handleGenerateCodes = () => {
-                const prefix = genCourseId === "ALL" ? "VIP" : genCourseId.substring(0, 4).toUpperCase();
+            // توليد الأكواد
+            const handleGenerateCodes = async () => {
+                const prefix = genTargetId === "ALL" ? "VIP" : genTargetId.substring(0, 4).toUpperCase();
                 const newBatch = [];
+                const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules || {};
+                const db = window.firebaseModules ? getFirestore(initializeApp(firebaseConfig)) : null;
+
                 for (let i = 0; i < Number(genCount); i++) {
                     const randomNum = Math.floor(10000 + Math.random() * 90000);
-                    newBatch.push({
-                        code: `${prefix}-${randomNum}`,
-                        courseId: genCourseId,
+                    const codeStr = `${prefix}-${randomNum}`;
+                    const codeData = {
+                        code: codeStr,
+                        targetId: genTargetId,
                         used: false,
-                        studentName: ""
-                    });
+                        createdAt: new Date().toISOString()
+                    };
+                    newBatch.push(codeData);
+
+                    if (db) {
+                        try {
+                            await setDoc(doc(db, "codes", codeStr), codeData);
+                        } catch(e) { console.error(e); }
+                    }
                 }
-                setActivationCodes([...newBatch, ...activationCodes]);
-                alert(`تم توليد ${genCount} أكواد جديدة بنجاح!`);
+                alert(`✅ تم توليد وحفظ ${genCount} أكواد سحابياً بنجاح!`);
             };
 
-            // إضافة حصة جديدة من لوحة الأدمن
-            const handleAddLesson = (e) => {
+            // إضافة الحصة الشاملة الجديدة بالثامنيل والسعر والاختبار والـ PDF
+            const handleAddComprehensiveLesson = async (e) => {
                 e.preventDefault();
                 if (!newLesson.title || !newLesson.videoUrl) {
-                    alert("يرجى كتابة عنوان الحصة ووضع رابط فيديو اليوتيوب");
+                    alert("يرجى كتابة عنوان الحصة ورابط فيديو اليوتيوب");
                     return;
                 }
+
                 const extractedId = extractYouTubeId(newLesson.videoUrl);
+                const defaultThumb = extractedId 
+                    ? `https://img.youtube.com/vi/${extractedId}/maxresdefault.jpg` 
+                    : "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80";
+
                 const lessonObj = {
-                    id: "l-" + Date.now(),
+                    id: "lesson-" + Date.now(),
                     title: newLesson.title,
                     duration: newLesson.duration || "45 دقيقة",
                     videoId: extractedId,
+                    thumbnail: newLesson.thumbnail.trim() || defaultThumb,
+                    price: Number(newLesson.price) || 0,
                     isFree: newLesson.isFree,
-                    pdfUrl: newLesson.pdfUrl || "#",
-                    quizQuestion: "هل استوعبت النقاط الأساسية في هذه الحصة؟",
-                    quizOptions: ["نعم، الحمد لله", "أحتاج لمراجعة الجزء العملي مرة أخرى"],
-                    correctOption: 0
+                    pdfUrl: newLesson.pdfUrl.trim() || "https://drive.google.com/",
+                    quizQuestion: newLesson.quizQuestion.trim() || "ما هي النتيجة المستفادة من تطبيق هذه الحصة؟",
+                    quizOptions: [
+                        newLesson.quizOpt0.trim() || "فهمت واستوعبت التطبيق العملي",
+                        newLesson.quizOpt1.trim() || "أحتاج لمراجعة كتابة الكود مرة ثانية",
+                        newLesson.quizOpt2.trim() || "سأطبق مع البشمهندس منصور خطوة بخطوة"
+                    ],
+                    correctOption: Number(newLesson.correctOpt) || 0
                 };
 
-                const updated = courses.map(c => {
+                const updatedCourses = courses.map(c => {
                     if (c.id === newLesson.courseId) {
-                        return { ...c, lessons: [...c.lessons, lessonObj] };
+                        const updated = { ...c, lessons: [...c.lessons, lessonObj] };
+                        if (window.firebaseModules) {
+                            const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules;
+                            const db = getFirestore(initializeApp(firebaseConfig));
+                            setDoc(doc(db, "courses", c.id), updated).catch(console.error);
+                        }
+                        return updated;
                     }
                     return c;
                 });
 
-                setCourses(updated);
-                setNewLesson({ ...newLesson, title: "", videoUrl: "", pdfUrl: "", isFree: false });
-                alert("تمت إضافة الحصة بنجاح داخل الكورس!");
-            };
+                setCourses(updatedCourses);
+                setNewLesson({
+                    courseId: newLesson.courseId,
+                    title: "",
+                    duration: "45 دقيقة",
+                    videoUrl: "",
+                    thumbnail: "",
+                    price: 35,
+                    pdfUrl: "",
+                    isFree: false,
+                    quizQuestion: "",
+                    quizOpt0: "",
+                    quizOpt1: "",
+                    quizOpt2: "",
+                    correctOpt: 0
+                });
 
-            // إضافة كورس جديد من لوحة الأدمن
-            const handleAddCourse = (e) => {
-                e.preventDefault();
-                if (!newCourse.title) {
-                    alert("يرجى كتابة اسم الكورس");
-                    return;
-                }
-                const courseId = "course-" + Date.now();
-                const defaultThumb = "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?auto=format&fit=crop&w=900&q=80";
-                const created = {
-                    id: courseId,
-                    title: newCourse.title,
-                    stage: newCourse.stage,
-                    price: Number(newCourse.price) || 150,
-                    thumbnail: newCourse.thumbnail.trim() || defaultThumb,
-                    badge: newCourse.badge || "كورس مميز ⭐",
-                    description: newCourse.description || "شرح وافٍ وتدريبات عملية شاملة مع المهندس منصور.",
-                    lessons: []
-                };
-                setCourses([...courses, created]);
-                setNewCourse({ title: "", stage: "الصف الأول الثانوي", price: 150, thumbnail: "", badge: "جديد ✨", description: "" });
-                alert("تم إنشاء الكورس الجديد بنجاح! يمكنك الآن إضافة حصص بداخله.");
+                alert("🎉 تم نشر الحصة الجديدة بالكامل وحفظها سحابياً بالثامنيل والاختبار والـ PDF!");
             };
 
             // حذف حصة
             const handleDeleteLesson = (courseId, lessonId) => {
                 if (!confirm("هل أنت متأكد من حذف هذه الحصة؟")) return;
-                setCourses(courses.map(c => c.id === courseId ? { ...c, lessons: c.lessons.filter(l => l.id !== lessonId) } : c));
+                const updated = courses.map(c => {
+                    if (c.id === courseId) {
+                        const mod = { ...c, lessons: c.lessons.filter(l => l.id !== lessonId) };
+                        if (window.firebaseModules) {
+                            const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules;
+                            const db = getFirestore(initializeApp(firebaseConfig));
+                            setDoc(doc(db, "courses", c.id), mod).catch(console.error);
+                        }
+                        return mod;
+                    }
+                    return c;
+                });
+                setCourses(updated);
             };
 
-            const filteredCourses = selectedStage === "الكل"
-                ? courses
-                : courses.filter(c => c.stage === selectedStage);
+            const filteredCourses = selectedStage === "الكل" ? courses : courses.filter(c => c.stage === selectedStage);
 
             return (
                 <div className="min-h-screen flex flex-col justify-between bg-darkBg text-slate-100">
-                    
-                    {/* ================= HEADER / NAVBAR ================= */}
+                    {/* Header */}
                     <header className="sticky top-0 z-40 backdrop-blur-md bg-[#0B0F19]/90 border-b border-slate-800/80">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-                            <div 
-                                onClick={() => { setActiveCourse(null); setIsAdminAuthenticated(false); }} 
-                                className="flex items-center gap-3 cursor-pointer group"
-                            >
+                            <div onClick={() => { setActiveCourse(null); setIsAdminAuthenticated(false); }} className="flex items-center gap-3 cursor-pointer group">
                                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition">
                                     <span className="text-2xl font-black text-white">&lt;/&gt;</span>
                                 </div>
@@ -475,121 +475,267 @@
 
                             <div className="flex items-center gap-3">
                                 <button
-                                    onClick={() => {
-                                        setTargetCourseForCode(null);
-                                        setShowPaymentModal(true);
-                                    }}
+                                    onClick={() => { setTargetItemForCode(null); setShowPaymentModal(true); }}
                                     className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition flex items-center gap-2"
                                 >
-                                    <span>🔑</span>
-                                    <span>معاك كود تفعيل؟</span>
+                                    <span>🔑</span><span>معاك كود تفعيل؟</span>
                                 </button>
-
                                 <a
                                     href={`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encodeURIComponent("السلام عليكم يا بشمهندس منصور، كنت عايز أشترك في المنصة وأستلم كود التفعيل")}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="hidden sm:flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-xl text-sm font-bold transition"
                                 >
-                                    <span>💬</span>
-                                    <span>تواصل واتساب</span>
+                                    <span>💬</span><span>تواصل واتساب</span>
                                 </a>
                             </div>
                         </div>
                     </header>
 
-                    {/* ================= MAIN CONTENT ================= */}
                     <main className="flex-grow">
                         {isAdminAuthenticated ? (
-                            /* ================= 🔒 لوحة تحكم المهندس منصور (الأدمن فقط) ================= */
+                            /* لوحة الأدمن الشاملة */
                             <div className="max-w-6xl mx-auto px-4 py-10">
                                 <div className="bg-cardBg border border-purple-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl">
                                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
                                         <div>
-                                            <span className="text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full">لوحة الإدارة السرية</span>
-                                            <h2 className="text-2xl font-black text-white mt-2">مرحباً بك يا {SITE_CONFIG.instructorTitle} 👋</h2>
-                                            <p className="text-slate-400 text-sm">من هنا يمكنك توليد أكواد التفعيل وإضافة الحصص والكورسات وتعديل الأسعار.</p>
+                                            <span className="text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full">لوحة الإدارة السحابية الشاملة ☁️</span>
+                                            <h2 className="text-2xl font-black text-white mt-2">إدارة الحصص والكورسات يا {SITE_CONFIG.instructorTitle} 👋</h2>
+                                            <p className="text-slate-400 text-sm">أضف أي حصة جديدة بكل تفاصيلها (الثامنيل، السعر المنفرد، ملزمة الـ PDF، وسؤال الاختبار التفاعلي) ومزامنتها سحابياً فوراً.</p>
                                         </div>
-                                        <button
-                                            onClick={() => setIsAdminAuthenticated(false)}
-                                            className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold transition"
-                                        >
+                                        <button onClick={() => setIsAdminAuthenticated(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold transition">
                                             العودة لواجهة الطلاب ⬅️
                                         </button>
                                     </div>
 
-                                    {/* تبويبات الأدمن */}
+                                    {/* تبويبات الإدارة */}
                                     <div className="flex flex-wrap gap-2 mb-8">
-                                        <button
-                                            onClick={() => setAdminTab("codes")}
-                                            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "codes" ? "bg-cyan-500 text-slate-950" : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"}`}
-                                        >
-                                            🔑 توليد وإدارة الأكواد ({activationCodes.length})
+                                        <button onClick={() => setAdminTab("lessons")} className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "lessons" ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300"}`}>
+                                            🎬 إضافة حصة جديدة (شاملة الثامنيل والسعر والاختبار)
                                         </button>
-                                        <button
-                                            onClick={() => setAdminTab("lessons")}
-                                            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "lessons" ? "bg-cyan-500 text-slate-950" : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"}`}
-                                        >
-                                            🎬 إضافة حصة يوتيوب (غير مدرج)
+                                        <button onClick={() => setAdminTab("codes")} className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "codes" ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300"}`}>
+                                            🔑 توليد أكواد الكورسات والحصص ({activationCodes.length})
                                         </button>
-                                        <button
-                                            onClick={() => setAdminTab("courses")}
-                                            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "courses" ? "bg-cyan-500 text-slate-950" : "bg-slate-800/80 text-slate-300 hover:bg-slate-700"}`}
-                                        >
-                                            📚 إضافة كورس جديد / تعديل سعر
-                                        </button>
-                                        <button
-                                            onClick={() => setAdminTab("export")}
-                                            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "export" ? "bg-amber-500 text-slate-950" : "bg-slate-800/80 text-amber-300 hover:bg-slate-700"}`}
-                                        >
-                                            💾 نسخ الكود لحفظه نهائياً للطلاب
+                                        <button onClick={() => setAdminTab("courses")} className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "courses" ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300"}`}>
+                                            📚 إدارة الكورسات والأسعار
                                         </button>
                                     </div>
 
-                                    {/* 1. قسم توليد الأكواد */}
+                                    {/* 1. نموذج إضافة حصة شاملة */}
+                                    {adminTab === "lessons" && (
+                                        <form onSubmit={handleAddComprehensiveLesson} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-7 space-y-6">
+                                            <div className="border-b border-slate-800 pb-3">
+                                                <h3 className="text-lg font-black text-cyan-400 flex items-center gap-2">
+                                                    <span>➕</span><span>إضافة محاضرة جديدة متكاملة</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-400">ستظهر المحاضرة فوراً للطلاب مع صورتها الخاصة والـ PDF وسؤال الاختبار.</p>
+                                            </div>
+
+                                            {/* البيانات الأساسية للحصة */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">1. الكورس التابعة له الحصة:</label>
+                                                    <select
+                                                        value={newLesson.courseId}
+                                                        onChange={e => setNewLesson({ ...newLesson, courseId: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    >
+                                                        {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">2. عنوان الحصة:</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="مثال: الحصة 4: بناء أول نموذج ذكاء اصطناعي ببايثون"
+                                                        value={newLesson.title}
+                                                        onChange={e => setNewLesson({ ...newLesson, title: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">3. رابط فيديو يوتيوب (Unlisted):</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="https://www.youtube.com/watch?v=..."
+                                                        value={newLesson.videoUrl}
+                                                        onChange={e => setNewLesson({ ...newLesson, videoUrl: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">4. رابط ثامنيل الحصة (أو اتركه لجلب صورة يوتيوب تلقائياً):</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="https://... رابط صورة الغلاف"
+                                                        value={newLesson.thumbnail}
+                                                        onChange={e => setNewLesson({ ...newLesson, thumbnail: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">5. سعر الحصة منفردة (ج.م):</label>
+                                                    <input
+                                                        type="number"
+                                                        value={newLesson.price}
+                                                        onChange={e => setNewLesson({ ...newLesson, price: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">6. رابط ملزمة الـ PDF (Google Drive):</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="https://drive.google.com/file/d/..."
+                                                        value={newLesson.pdfUrl}
+                                                        onChange={e => setNewLesson({ ...newLesson, pdfUrl: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">7. مدة الحصة:</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="50 دقيقة"
+                                                        value={newLesson.duration}
+                                                        onChange={e => setNewLesson({ ...newLesson, duration: e.target.value })}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3 pt-6">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="comprehensiveFreeCheck"
+                                                        checked={newLesson.isFree}
+                                                        onChange={e => setNewLesson({ ...newLesson, isFree: e.target.checked })}
+                                                        className="w-5 h-5 accent-cyan-500"
+                                                    />
+                                                    <label htmlFor="comprehensiveFreeCheck" className="text-sm font-bold text-slate-200 cursor-pointer">
+                                                        حصة مجانية تجريبية مفتوحة للجميع بدون كود
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {/* قسم إضافة الاختبار التفاعلي الخاص بالحصة */}
+                                            <div className="bg-slate-950/70 border border-slate-800 p-5 rounded-2xl space-y-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-amber-400 font-black">🧠</span>
+                                                    <h4 className="font-bold text-sm text-amber-400">إضافة سؤال الاختبار التفاعلي للحصة (Quiz):</h4>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1">نص السؤال:</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="مثال: ما هو الأمر المستخدم لطباعة نص في بايثون؟"
+                                                        value={newLesson.quizQuestion}
+                                                        onChange={e => setNewLesson({ ...newLesson, quizQuestion: e.target.value })}
+                                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="block text-[11px] text-slate-400 mb-1">الخيار الأول (0):</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="print()"
+                                                            value={newLesson.quizOpt0}
+                                                            onChange={e => setNewLesson({ ...newLesson, quizOpt0: e.target.value })}
+                                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] text-slate-400 mb-1">الخيار الثاني (1):</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="echo"
+                                                            value={newLesson.quizOpt1}
+                                                            onChange={e => setNewLesson({ ...newLesson, quizOpt1: e.target.value })}
+                                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[11px] text-slate-400 mb-1">الخيار الثالث (2):</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="input()"
+                                                            value={newLesson.quizOpt2}
+                                                            onChange={e => setNewLesson({ ...newLesson, quizOpt2: e.target.value })}
+                                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="w-full sm:w-1/3">
+                                                    <label className="block text-[11px] text-emerald-400 mb-1 font-bold">الإجابة الصحيحة:</label>
+                                                    <select
+                                                        value={newLesson.correctOpt}
+                                                        onChange={e => setNewLesson({ ...newLesson, correctOpt: Number(e.target.value) })}
+                                                        className="w-full bg-slate-900 border border-emerald-500/50 text-emerald-300 font-bold rounded-xl px-3 py-2 text-xs"
+                                                    >
+                                                        <option value={0}>الخيار الأول هو الصحيح</option>
+                                                        <option value={1}>الخيار الثاني هو الصحيح</option>
+                                                        <option value={2}>الخيار الثالث هو الصحيح</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3.5 rounded-2xl text-base shadow-xl shadow-cyan-500/20 transition flex items-center justify-center gap-2"
+                                            >
+                                                <span>🚀</span><span>نشر الحصة الجديدة وحفظها سحابياً لجميع الطلاب</span>
+                                            </button>
+                                        </form>
+                                    )}
+
+                                    {/* 2. توليد الأكواد */}
                                     {adminTab === "codes" && (
                                         <div className="space-y-6">
                                             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                                                 <div>
-                                                    <label className="block text-xs text-slate-400 mb-2 font-bold">اختر الكورس المراد توليد أكواد له:</label>
+                                                    <label className="block text-xs text-slate-400 mb-2 font-bold">توليد أكواد لـ (كورس كامل أو حصة منفردة):</label>
                                                     <select
-                                                        value={genCourseId}
-                                                        onChange={(e) => setGenCourseId(e.target.value)}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                                                        value={genTargetId}
+                                                        onChange={e => setGenTargetId(e.target.value)}
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
                                                     >
-                                                        <option value="ALL">🌟 كود شامل يفتح كل الكورسات (VIP)</option>
-                                                        {courses.map(c => (
-                                                            <option key={c.id} value={c.id}>{c.title}</option>
-                                                        ))}
+                                                        <option value="ALL">🌟 كود شامل VIP يفتح كل المنصة</option>
+                                                        <optgroup label="الكورسات الكاملة:">
+                                                            {courses.map(c => <option key={c.id} value={c.id}>كورس: {c.title}</option>)}
+                                                        </optgroup>
+                                                        <optgroup label="الحصص المنفردة:">
+                                                            {courses.flatMap(c => c.lessons.map(l => (
+                                                                <option key={l.id} value={l.id}>حصة: {l.title} ({c.stage})</option>
+                                                            )))}
+                                                        </optgroup>
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-slate-400 mb-2 font-bold">عدد الأكواد المطلوبة:</label>
+                                                    <label className="block text-xs text-slate-400 mb-2 font-bold">عدد الأكواد:</label>
                                                     <input
                                                         type="number"
                                                         min="1"
                                                         max="100"
                                                         value={genCount}
-                                                        onChange={(e) => setGenCount(e.target.value)}
+                                                        onChange={e => setGenCount(e.target.value)}
                                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
                                                     />
                                                 </div>
                                                 <button
                                                     onClick={handleGenerateCodes}
-                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 px-4 rounded-xl text-sm transition"
+                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black py-2.5 px-4 rounded-xl text-sm transition"
                                                 >
-                                                    ⚡ توليد الأكواد الآن
+                                                    ⚡ توليد وحفظ سحابياً فوراً
                                                 </button>
                                             </div>
 
-                                            <div className="overflow-x-auto border border-slate-800 rounded-2xl">
+                                            <div className="overflow-x-auto border border-slate-800 rounded-2xl max-h-96">
                                                 <table className="w-full text-right text-sm">
-                                                    <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                                                    <thead className="bg-slate-900 text-slate-400 sticky top-0 border-b border-slate-800">
                                                         <tr>
-                                                            <th className="p-3.5">كود التفعيل</th>
-                                                            <th className="p-3.5">الكورس المخصص</th>
-                                                            <th className="p-3.5">الحالة</th>
-                                                            <th className="p-3.5">نسخ الكود</th>
+                                                            <th className="p-3.5">الكود</th>
+                                                            <th className="p-3.5">المخصص له</th>
+                                                            <th className="p-3.5">الحالة السحابية</th>
+                                                            <th className="p-3.5">نسخ</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-800/60">
@@ -597,21 +743,18 @@
                                                             <tr key={idx} className="hover:bg-slate-800/30">
                                                                 <td className="p-3.5 font-mono font-bold text-cyan-400 text-base">{item.code}</td>
                                                                 <td className="p-3.5 text-slate-300">
-                                                                    {item.courseId === "ALL" ? "جميع الكورسات (VIP)" : (courses.find(c => c.id === item.courseId)?.title || item.courseId)}
+                                                                    {item.targetId === "ALL" ? "جميع الكورسات (VIP)" : item.targetId}
                                                                 </td>
                                                                 <td className="p-3.5">
                                                                     {item.used ? (
-                                                                        <span className="bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full">مُستخدم</span>
+                                                                        <span className="bg-rose-500/20 text-rose-300 text-xs px-2.5 py-1 rounded-full font-bold">مُستخدم (مقفل 🔒)</span>
                                                                     ) : (
-                                                                        <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full">متاح للإرسال</span>
+                                                                        <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-1 rounded-full font-bold">متاح للإرسال ✅</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-3.5">
                                                                     <button
-                                                                        onClick={() => {
-                                                                            navigator.clipboard.writeText(item.code);
-                                                                            alert(`تم نسخ الكود: ${item.code}`);
-                                                                        }}
+                                                                        onClick={() => { navigator.clipboard.writeText(item.code); alert(`تم نسخ الكود: ${item.code}`); }}
                                                                         className="bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold transition"
                                                                     >
                                                                         نسخ 📋
@@ -625,256 +768,112 @@
                                         </div>
                                     )}
 
-                                    {/* 2. قسم إضافة حصة يوتيوب */}
-                                    {adminTab === "lessons" && (
-                                        <form onSubmit={handleAddLesson} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
-                                            <h3 className="text-lg font-bold text-cyan-400">إضافة حصة جديدة من يوتيوب (Unlisted)</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">اختر الكورس:</label>
-                                                    <select
-                                                        value={newLesson.courseId}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, courseId: e.target.value })}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                    >
-                                                        {courses.map(c => (
-                                                            <option key={c.id} value={c.id}>{c.title}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">عنوان الحصة:</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="مثال: الحصة 4: الحلقات التكرارية Loops"
-                                                        value={newLesson.title}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, title: e.target.value })}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">رابط فيديو يوتيوب (أو الـ Video ID):</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="https://www.youtube.com/watch?v=xxxxxxxxxxx"
-                                                        value={newLesson.videoUrl}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, videoUrl: e.target.value })}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                    />
-                                                    <p className="text-[11px] text-slate-400 mt-1">💡 الصق رابط اليوتيوب كامل والمنصة ستستخرج الـ ID تلقائياً.</p>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">رابط ملزمة الـ PDF (من Google Drive):</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="https://drive.google.com/file/d/..."
-                                                        value={newLesson.pdfUrl}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, pdfUrl: e.target.value })}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">مدة الحصة:</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="50 دقيقة"
-                                                        value={newLesson.duration}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, duration: e.target.value })}
-                                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                    />
-                                                </div>
-                                                <div className="flex items-center gap-3 pt-6">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="freeCheck"
-                                                        checked={newLesson.isFree}
-                                                        onChange={(e) => setNewLesson({ ...newLesson, isFree: e.target.checked })}
-                                                        className="w-5 h-5 accent-cyan-500"
-                                                    />
-                                                    <label htmlFor="freeCheck" className="text-sm font-bold text-slate-200 cursor-pointer">
-                                                        جعل هذه الحصة مجانية مفتوحة للجميع (كتجربة)
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="submit"
-                                                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3 rounded-xl text-sm transition"
-                                            >
-                                                ➕ حفظ وإضافة الحصة للكورس
-                                            </button>
-                                        </form>
-                                    )}
-
-                                    {/* 3. قسم إضافة كورس جديد وتعديل الأسعار */}
+                                    {/* 3. إدارة الكورسات وحصصها */}
                                     {adminTab === "courses" && (
-                                        <div className="space-y-8">
-                                            <form onSubmit={handleAddCourse} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
-                                                <h3 className="text-lg font-bold text-cyan-400">إنشاء كورس جديد بالثامنيل والسعر الخاص بك</h3>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs text-slate-400 mb-1.5 font-bold">اسم الكورس:</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="مثال: المراجعة النهائية - أولى ثانوي"
-                                                            value={newCourse.title}
-                                                            onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-slate-400 mb-1.5 font-bold">المرحلة الدراسية:</label>
-                                                        <select
-                                                            value={newCourse.stage}
-                                                            onChange={(e) => setNewCourse({ ...newCourse, stage: e.target.value })}
-                                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                        >
-                                                            <option value="الصف الأول الثانوي">الصف الأول الثانوي</option>
-                                                            <option value="الصف الثاني الثانوي - بكالوريا">الصف الثاني الثانوي - بكالوريا</option>
-                                                            <option value="تأسيس البرمجة">تأسيس البرمجة</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-slate-400 mb-1.5 font-bold">السعر بالجنيه المصري:</label>
-                                                        <input
-                                                            type="number"
-                                                            value={newCourse.price}
-                                                            onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
-                                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-slate-400 mb-1.5 font-bold">رابط صورة الثامنيل (Thumbnail URL):</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg"
-                                                            value={newCourse.thumbnail}
-                                                            onChange={(e) => setNewCourse({ ...newCourse, thumbnail: e.target.value })}
-                                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                        />
-                                                    </div>
-                                                    <div className="sm:col-span-2">
-                                                        <label className="block text-xs text-slate-400 mb-1.5 font-bold">وصف الكورس:</label>
-                                                        <textarea
-                                                            rows="2"
-                                                            placeholder="اكتب نبذة سريعة تشجع الطالب على الاشتراك..."
-                                                            value={newCourse.description}
-                                                            onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white"
-                                                        ></textarea>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    type="submit"
-                                                    className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black px-6 py-3 rounded-xl text-sm transition"
-                                                >
-                                                    🚀 نشر الكورس الجديد
-                                                </button>
-                                            </form>
-
-                                            {/* تعديل سريع لأسعار الكورسات الحالية */}
-                                            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6">
-                                                <h4 className="font-bold text-white mb-4">تعديل سريع لأسعار وثامنيل الكورسات الحالية:</h4>
-                                                <div className="space-y-4">
-                                                    {courses.map(course => (
-                                                        <div key={course.id} className="flex flex-wrap items-center justify-between gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700/60">
-                                                            <div className="flex items-center gap-3">
-                                                                <img src={course.thumbnail} alt="" className="w-16 h-12 object-cover rounded-lg" />
-                                                                <div>
-                                                                    <p className="font-bold text-sm text-white">{course.title}</p>
-                                                                    <p className="text-xs text-slate-400">{course.lessons.length} حصص مضافة</p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <label className="text-xs text-slate-400">السعر (ج.م):</label>
-                                                                <input
-                                                                    type="number"
-                                                                    value={course.price}
-                                                                    onChange={(e) => {
-                                                                        const val = Number(e.target.value);
-                                                                        setCourses(courses.map(c => c.id === course.id ? { ...c, price: val } : c));
-                                                                    }}
-                                                                    className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-cyan-400"
-                                                                />
+                                        <div className="space-y-6">
+                                            {courses.map(course => (
+                                                <div key={course.id} className="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4">
+                                                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <img src={course.thumbnail} alt="" className="w-16 h-12 object-cover rounded-xl border border-slate-700" />
+                                                            <div>
+                                                                <h4 className="font-black text-white text-base">{course.title}</h4>
+                                                                <p className="text-xs text-slate-400">{course.stage} • السعر: <span className="text-cyan-400 font-bold">{course.price} ج.م</span></p>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const p = prompt("أدخل السعر الجديد للكورس بالجنيه:", course.price);
+                                                                    if (p !== null) {
+                                                                        const updated = courses.map(c => c.id === course.id ? { ...c, price: Number(p) } : c);
+                                                                        setCourses(updated);
+                                                                        if (window.firebaseModules) {
+                                                                            const { getFirestore, doc, updateDoc, initializeApp } = window.firebaseModules;
+                                                                            const db = getFirestore(initializeApp(firebaseConfig));
+                                                                            updateDoc(doc(db, "courses", course.id), { price: Number(p) });
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-xl text-white font-bold"
+                                                            >
+                                                                تعديل السعر 💰
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    const t = prompt("أدخل رابط صورة الثامنيل الجديدة للكورس:", course.thumbnail);
+                                                                    if (t && t.trim()) {
+                                                                        const updated = courses.map(c => c.id === course.id ? { ...c, thumbnail: t.trim() } : c);
+                                                                        setCourses(updated);
+                                                                        if (window.firebaseModules) {
+                                                                            const { getFirestore, doc, updateDoc, initializeApp } = window.firebaseModules;
+                                                                            const db = getFirestore(initializeApp(firebaseConfig));
+                                                                            updateDoc(doc(db, "courses", course.id), { thumbnail: t.trim() });
+                                                                        }
+                                                                    }
+                                                                }}
+                                                                className="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-xl text-white font-bold"
+                                                            >
+                                                                تغيير الثامنيل 🖼️
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* قائمة الحصص بداخل الكورس مع إمكانية حذف أي حصة */}
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs text-slate-400 font-bold">الحصص المرفوعة داخل الكورس:</p>
+                                                        {course.lessons.map((lesson, lIdx) => (
+                                                            <div key={lesson.id} className="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 text-xs">
+                                                                <div className="flex items-center gap-3">
+                                                                    <img src={lesson.thumbnail || course.thumbnail} alt="" className="w-12 h-9 object-cover rounded-lg border border-slate-700" />
+                                                                    <div>
+                                                                        <p className="font-bold text-white">{lIdx + 1}. {lesson.title}</p>
+                                                                        <span className="text-[11px] text-slate-400">⏱️ {lesson.duration} • 💰 منفردة: {lesson.price} ج.م {lesson.isFree && "• (مجانية)"}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => handleDeleteLesson(course.id, lesson.id)}
+                                                                    className="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-500/10 rounded-lg transition"
+                                                                >
+                                                                    حذف 🗑️
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* 4. قسم تصدير البيانات لتثبيتها في ملف الموقع */}
-                                    {adminTab === "export" && (
-                                        <div className="bg-slate-900/90 border border-amber-500/40 rounded-2xl p-6 space-y-4">
-                                            <h3 className="text-lg font-bold text-amber-400">كيف تحفظ تعديلاتك لتظهر عند كل الطلاب على الموبايلات؟</h3>
-                                            <p className="text-sm text-slate-300 leading-relaxed">
-                                                بعد أن تضيف حصصك وتولد الأكواد هنا، اضغط الزر بالأسفل لنسخ بيانات الكورسات والأكواد الجاهزة، واستبدل بها جزئية <code className="text-cyan-400">INITIAL_COURSES</code> و <code className="text-cyan-400">INITIAL_CODES</code> داخل ملف <code className="text-cyan-400">index.html</code> قبل رفعه على Netlify، أو اربطها بـ Firebase مجاناً.
-                                            </p>
-                                            <div className="flex flex-wrap gap-3">
-                                                <button
-                                                    onClick={() => {
-                                                        const exportStr = `const INITIAL_COURSES = ${JSON.stringify(courses, null, 4)};
-
-const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
-                                                        navigator.clipboard.writeText(exportStr);
-                                                        alert("تم نسخ كود البيانات بالكامل! يمكنك لصقه في ملف index.html");
-                                                    }}
-                                                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-xl text-sm transition"
-                                                >
-                                                    📋 نسخ كود الكورسات والأكواد المحدثة
-                                                </button>
-                                            </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ) : activeCourse ? (
-                            /* ================= 🎥 مشغل الكورسات والحصص للطالب ================= */
+                            /* مشغل الحصة */
                             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                                <button
-                                    onClick={() => { setActiveCourse(null); setActiveLesson(null); }}
-                                    className="mb-6 inline-flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition"
-                                >
-                                    <span>➡️</span>
-                                    <span>العودة لجميع الكورسات</span>
+                                <button onClick={() => { setActiveCourse(null); setActiveLesson(null); }} className="mb-6 inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-bold transition">
+                                    <span>➡️</span><span>العودة لجميع الكورسات</span>
                                 </button>
-
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    {/* عمود مشغل الفيديو والملزمة والاختبار */}
                                     <div className="lg:col-span-2 space-y-6">
-                                        {activeLesson && (activeLesson.isFree || isCourseUnlocked(activeCourse.id)) ? (
+                                        {activeLesson && (activeLesson.isFree || isItemUnlocked(activeCourse.id, activeLesson.id)) ? (
                                             <div className="bg-cardBg border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
                                                 <div className="video-wrapper shadow-2xl border border-slate-800">
-                                                    <iframe
-                                                        src={`https://www.youtube-nocookie.com/embed/${activeLesson.videoId}?rel=0&modestbranding=1`}
-                                                        title={activeLesson.title}
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                        allowFullScreen
-                                                    ></iframe>
+                                                    <iframe src={`https://www.youtube-nocookie.com/embed/${activeLesson.videoId}?rel=0&modestbranding=1`} title={activeLesson.title} allowFullScreen></iframe>
                                                 </div>
-
                                                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-b border-slate-800 pb-4">
                                                     <div>
                                                         <span className="text-xs text-cyan-400 font-bold">{activeCourse.title}</span>
                                                         <h2 className="text-xl font-black text-white mt-1">{activeLesson.title}</h2>
                                                     </div>
-                                                    <a
-                                                        href={activeLesson.pdfUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-purple-600/25"
-                                                    >
-                                                        <span>📄</span>
-                                                        <span>تحميل ملزمة الحصة PDF</span>
+                                                    <a href={activeLesson.pdfUrl} target="_blank" rel="noreferrer" className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-purple-600/25">
+                                                        <span>📄</span><span>تحميل ملزمة الحصة PDF</span>
                                                     </a>
                                                 </div>
 
-                                                {/* سؤال تفاعلي سريع للطالب */}
+                                                {/* سؤال الاختبار التفاعلي */}
                                                 {activeLesson.quizQuestion && (
                                                     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3">
                                                         <h4 className="font-bold text-amber-400 text-sm flex items-center gap-2">
-                                                            <span>🧠</span>
-                                                            <span>سؤال سريع للتأكد من فهم الحصة:</span>
+                                                            <span>🧠</span><span>سؤال تفاعلي سريع للحصة:</span>
                                                         </h4>
                                                         <p className="text-white font-semibold text-sm">{activeLesson.quizQuestion}</p>
                                                         <div className="space-y-2 pt-1">
@@ -891,9 +890,7 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                                                     }`}
                                                                 >
                                                                     <span>{opt}</span>
-                                                                    {quizSelected === i && (
-                                                                        <span>{i === activeLesson.correctOption ? "✅ إجابة صحيحة!" : "❌ حاول مرة أخرى"}</span>
-                                                                    )}
+                                                                    {quizSelected === i && <span>{i === activeLesson.correctOption ? "✅ إجابة صحيحة!" : "❌ حاول مرة أخرى"}</span>}
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -901,86 +898,56 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                                 )}
                                             </div>
                                         ) : (
-                                            /* شاشة القفل إذا كانت الحصة مدفوعة والكورس غير مفعل */
+                                            /* شاشة الحصة المقفولة */
                                             <div className="bg-cardBg border border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-5 shadow-2xl">
-                                                <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-4xl mx-auto">
-                                                    🔒
-                                                </div>
-                                                <h3 className="text-2xl font-black text-white">هذه الحصة للمشتركين في الكورس</h3>
+                                                <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-4xl mx-auto">🔒</div>
+                                                <h3 className="text-2xl font-black text-white">هذه الحصة للمشتركين فقط</h3>
                                                 <p className="text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-                                                    اشترك الآن في <strong>{activeCourse.title}</strong> بسعر <strong>{activeCourse.price} ج.م</strong> فقط واحصل على كود التفعيل الفوري لفتح جميع الحصص والملازم والاختبارات.
+                                                    يمكنك الاشتراك في الكورس كاملاً بسعر <strong>{activeCourse.price} ج.م</strong> أو فتح هذه الحصة منفردة بسعر <strong>{activeLesson?.price || 35} ج.م</strong>.
                                                 </p>
-                                                <button
-                                                    onClick={() => {
-                                                        setTargetCourseForCode(activeCourse);
-                                                        setShowPaymentModal(true);
-                                                    }}
-                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black px-8 py-3.5 rounded-2xl text-sm shadow-xl shadow-cyan-500/20 transition"
-                                                >
-                                                    🔑 تفعيل الكورس بالكود / طرق الدفع
-                                                </button>
+                                                <div className="flex flex-wrap items-center justify-center gap-3">
+                                                    <button onClick={() => { setTargetItemForCode(activeCourse); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black px-6 py-3 rounded-2xl text-sm shadow-xl shadow-cyan-500/20 transition">
+                                                        🔑 تفعيل الكورس كاملاً ({activeCourse.price} ج.م)
+                                                    </button>
+                                                    {activeLesson && (
+                                                        <button onClick={() => { setTargetItemForCode(activeLesson); setShowPaymentModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded-2xl text-sm border border-slate-700 transition">
+                                                            🔑 تفعيل هذه الحصة فقط ({activeLesson.price} ج.م)
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* عمود قائمة حصص الكورس */}
+                                    {/* قائمة حصص الكورس مع صور الثامنيل الخاصة بها */}
                                     <div className="bg-cardBg border border-slate-800 rounded-3xl p-5 h-fit space-y-4">
                                         <div className="border-b border-slate-800 pb-4 flex items-center justify-between">
                                             <div>
                                                 <h3 className="font-black text-lg text-white">محتوى الكورس</h3>
                                                 <p className="text-xs text-slate-400">{activeCourse.lessons.length} حصص مسجلة بجودة عالية</p>
                                             </div>
-                                            {isCourseUnlocked(activeCourse.id) ? (
-                                                <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full">مُفعّل ✅</span>
-                                            ) : (
-                                                <button
-                                                    onClick={() => {
-                                                        setTargetCourseForCode(activeCourse);
-                                                        setShowPaymentModal(true);
-                                                    }}
-                                                    className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-cyan-500 hover:text-slate-950 transition"
-                                                >
-                                                    فتح الكورس 🔓
-                                                </button>
-                                            )}
                                         </div>
-
                                         <div className="space-y-2.5">
                                             {activeCourse.lessons.map((lesson, index) => {
-                                                const unlocked = lesson.isFree || isCourseUnlocked(activeCourse.id);
+                                                const unlocked = lesson.isFree || isItemUnlocked(activeCourse.id, lesson.id);
                                                 const isCurrent = activeLesson && activeLesson.id === lesson.id;
                                                 return (
                                                     <div
                                                         key={lesson.id}
-                                                        onClick={() => {
-                                                            setActiveLesson(lesson);
-                                                            setQuizSelected(null);
-                                                        }}
-                                                        className={`p-3.5 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
-                                                            isCurrent
-                                                                ? "bg-cyan-500/15 border-cyan-500 text-white"
-                                                                : "bg-slate-900/70 border-slate-800/80 text-slate-300 hover:bg-slate-800/60"
+                                                        onClick={() => { setActiveLesson(lesson); setQuizSelected(null); }}
+                                                        className={`p-3 rounded-2xl border cursor-pointer transition flex items-center justify-between gap-3 ${
+                                                            isCurrent ? "bg-cyan-500/15 border-cyan-500 text-white" : "bg-slate-900/70 border-slate-800/80 text-slate-300 hover:bg-slate-800/60"
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
-                                                                unlocked ? "bg-cyan-500/20 text-cyan-300" : "bg-slate-800 text-slate-500"
-                                                            }`}>
-                                                                {index + 1}
-                                                            </div>
+                                                            <img src={lesson.thumbnail || activeCourse.thumbnail} alt="" className="w-14 h-10 object-cover rounded-xl border border-slate-800 shrink-0" />
                                                             <div>
-                                                                <p className="text-sm font-bold leading-snug">{lesson.title}</p>
+                                                                <p className="text-sm font-bold leading-snug line-clamp-1">{index + 1}. {lesson.title}</p>
                                                                 <span className="text-[11px] text-slate-400">⏱️ {lesson.duration}</span>
                                                             </div>
                                                         </div>
-                                                        <div>
-                                                            {lesson.isFree ? (
-                                                                <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">مجانية</span>
-                                                            ) : unlocked ? (
-                                                                <span className="text-cyan-400 text-sm">▶️</span>
-                                                            ) : (
-                                                                <span className="text-slate-500 text-sm">🔒</span>
-                                                            )}
+                                                        <div className="shrink-0">
+                                                            {lesson.isFree ? <span className="text-[11px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold">مجانية</span> : unlocked ? <span className="text-cyan-400">▶️</span> : <span className="text-slate-500">🔒</span>}
                                                         </div>
                                                     </div>
                                                 );
@@ -990,88 +957,53 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                 </div>
                             </div>
                         ) : (
-                            /* ================= 🏠 الصفحة الرئيسية وواجهة الطلاب ================= */
+                            /* واجهة الطلاب الرئيسية */
                             <div>
-                                {/* HERO SECTION */}
                                 <section className="relative overflow-hidden py-14 sm:py-20 border-b border-slate-800/80">
-                                    <div className="absolute -top-32 -left-32 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                                    <div className="absolute top-20 -right-32 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
                                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
                                         <div className="inline-flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 px-4 py-1.5 rounded-full text-xs sm:text-sm text-cyan-300 font-bold">
-                                            <span>🚀</span>
-                                            <span>منصة {SITE_CONFIG.instructorTitle} لتدريس البرمجة والذكاء الاصطناعي</span>
+                                            <span>🚀</span><span>منصة {SITE_CONFIG.instructorTitle} لتدريس البرمجة والذكاء الاصطناعي</span>
                                         </div>
-
                                         <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight max-w-4xl mx-auto">
                                             افهم البرمجة والذكاء الاصطناعي صح.. وكون <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">مبرمج المستقبل</span>
                                         </h2>
-
                                         <p className="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-                                            حصص مسجلة بأعلى جودة لطلاب الصف الأول الثانوي، والصف الثاني الثانوي (نظام البكالوريا الجديد)، وكورسات تأسيس البرمجة من الصفر مع ملازم PDF واختبارات دورية.
+                                            حصص مسجلة بأعلى جودة لطلاب الصف الأول الثانوي والصف الثاني الثانوي (نظام البكالوريا الجديد) ومعسكرات تأسيس البرمجة من الصفر.
                                         </p>
-
                                         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-                                            <a
-                                                href="#courses-section"
-                                                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black px-7 py-3.5 rounded-2xl text-sm sm:text-base shadow-xl shadow-cyan-500/20 transition"
-                                            >
+                                            <a href="#courses-section" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black px-7 py-3.5 rounded-2xl text-sm sm:text-base shadow-xl shadow-cyan-500/20 transition">
                                                 📚 تصفح الكورسات والحصص المجانية
                                             </a>
-                                            <button
-                                                onClick={() => {
-                                                    setTargetCourseForCode(null);
-                                                    setShowPaymentModal(true);
-                                                }}
-                                                className="bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-bold px-6 py-3.5 rounded-2xl text-sm sm:text-base transition"
-                                            >
-                                                🔑 تفعيل كود الكورس
+                                            <button onClick={() => { setTargetItemForCode(null); setShowPaymentModal(true); }} className="bg-slate-800/90 hover:bg-slate-700 text-white border border-slate-700 font-bold px-6 py-3.5 rounded-2xl text-sm sm:text-base transition">
+                                                🔑 تفعيل كود الاشتراك
                                             </button>
                                         </div>
                                     </div>
                                 </section>
 
-                                {/* فلترة المراحل الدراسية والكورسات */}
                                 <section id="courses-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-8">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div>
                                             <h3 className="text-2xl font-black text-white">الكورسات المتاحة بالمنصة</h3>
-                                            <p className="text-sm text-slate-400">يمكنك مشاهدة الحصة الأولى من أي كورس مجاناً قبل الاشتراك</p>
+                                            <p className="text-sm text-slate-400">شاهد الحصة الأولى من أي كورس مجاناً قبل الاشتراك</p>
                                         </div>
-
                                         <div className="flex flex-wrap gap-2">
                                             {["الكل", "الصف الأول الثانوي", "الصف الثاني الثانوي - بكالوريا", "تأسيس البرمجة"].map(stage => (
-                                                <button
-                                                    key={stage}
-                                                    onClick={() => setSelectedStage(stage)}
-                                                    className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${
-                                                        selectedStage === stage
-                                                            ? "bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20"
-                                                            : "bg-cardBg text-slate-300 border border-slate-800 hover:border-slate-700"
-                                                    }`}
-                                                >
+                                                <button key={stage} onClick={() => setSelectedStage(stage)} className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${selectedStage === stage ? "bg-cyan-500 text-slate-950" : "bg-cardBg text-slate-300 border border-slate-800"}`}>
                                                     {stage}
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
 
-                                    {/* شبكة الكورسات */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
                                         {filteredCourses.map(course => {
-                                            const unlocked = isCourseUnlocked(course.id);
+                                            const unlocked = isItemUnlocked(course.id);
                                             return (
-                                                <div
-                                                    key={course.id}
-                                                    className="bg-cardBg border border-slate-800/90 hover:border-cyan-500/50 rounded-3xl overflow-hidden flex flex-col justify-between transition duration-300 shadow-xl group"
-                                                >
+                                                <div key={course.id} className="bg-cardBg border border-slate-800/90 hover:border-cyan-500/50 rounded-3xl overflow-hidden flex flex-col justify-between transition duration-300 shadow-xl group">
                                                     <div>
                                                         <div className="relative h-52 overflow-hidden bg-slate-900">
-                                                            <img
-                                                                src={course.thumbnail}
-                                                                alt={course.title}
-                                                                className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                                            />
+                                                            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                                             <div className="absolute top-3 right-3 bg-slate-950/85 backdrop-blur-md text-cyan-300 border border-cyan-500/30 text-xs font-bold px-3 py-1 rounded-full">
                                                                 {course.badge}
                                                             </div>
@@ -1079,7 +1011,6 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                                                 {course.price} ج.م
                                                             </div>
                                                         </div>
-
                                                         <div className="p-6 space-y-3">
                                                             <span className="text-xs font-bold text-purple-400">{course.stage}</span>
                                                             <h4 className="text-lg font-black text-white leading-snug">{course.title}</h4>
@@ -1092,31 +1023,17 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                                             <span>🎬 {course.lessons.length} حصص</span>
                                                             <span>📄 شاملة الملازم والـ PDF</span>
                                                         </div>
-
                                                         <div className="grid grid-cols-2 gap-2.5">
-                                                            <button
-                                                                onClick={() => {
-                                                                    setActiveCourse(course);
-                                                                    setActiveLesson(course.lessons[0] || null);
-                                                                }}
-                                                                className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition"
-                                                            >
-                                                                ▶️ {unlocked ? "دخول الكورس" : "شاهد الحصة 1 مجاناً"}
+                                                            <button onClick={() => { setActiveCourse(course); setActiveLesson(course.lessons[0] || null); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition">
+                                                                ▶️ {unlocked ? "دخول الكورس" : "الحصة 1 مجاناً"}
                                                             </button>
-
                                                             {unlocked ? (
                                                                 <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm flex items-center justify-center">
                                                                     مُفعّل لديك ✅
                                                                 </div>
                                                             ) : (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setTargetCourseForCode(course);
-                                                                        setShowPaymentModal(true);
-                                                                    }}
-                                                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs sm:text-sm transition"
-                                                                >
-                                                                    🔑 اشترك / فعّل الكود
+                                                                <button onClick={() => { setTargetItemForCode(course); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs sm:text-sm transition">
+                                                                    🔑 تفعيل الكود
                                                                 </button>
                                                             )}
                                                         </div>
@@ -1130,90 +1047,69 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                         )}
                     </main>
 
-                    {/* ================= 💳 نافذة الدفع وتفعيل الكود للطالب ================= */}
+                    {/* نافذة الدفع وتفعيل الكود */}
                     {showPaymentModal && (
                         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                             <div className="bg-cardBg border border-slate-700 rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative">
-                                <button
-                                    onClick={() => {
-                                        setShowPaymentModal(false);
-                                        setCodeMessage({ type: "", text: "" });
-                                    }}
-                                    className="absolute top-5 left-5 text-slate-400 hover:text-white text-xl"
-                                >
-                                    ✕
-                                </button>
-
+                                <button onClick={() => { setShowPaymentModal(false); setCodeMessage({ type: "", text: "" }); }} className="absolute top-5 left-5 text-slate-400 hover:text-white text-xl">✕</button>
                                 <div>
-                                    <span className="text-xs bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full font-bold">تفعيل فوري</span>
+                                    <span className="text-xs bg-cyan-500/20 text-cyan-300 px-3 py-1 rounded-full font-bold">تفعيل فوري سحابي ☁️</span>
                                     <h3 className="text-xl font-black text-white mt-2">
-                                        {targetCourseForCode ? `تفعيل: ${targetCourseForCode.title}` : "تفعيل كود الاشتراك"}
+                                        {targetItemForCode ? `تفعيل: ${targetItemForCode.title}` : "تفعيل كود الاشتراك"}
                                     </h3>
                                 </div>
-
-                                {/* خطوات الدفع عبر فودافون كاش أو انستا باي */}
                                 <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-2.5 text-xs sm:text-sm">
-                                    <p className="font-bold text-amber-400">📲 ازاي تجيب كود التفعيل؟</p>
+                                    <p className="font-bold text-amber-400">📲 خطوات استلام الكود:</p>
                                     <ol className="list-decimal list-inside space-y-1.5 text-slate-300">
                                         <li>
-                                            حول قيمة الكورس {targetCourseForCode ? `(${targetCourseForCode.price} ج.م)` : ""} فودافون كاش أو انستا باي على رقم:{" "}
+                                            حول المبلغ {targetItemForCode ? `(${targetItemForCode.price} ج.م)` : ""} فودافون كاش أو انستا باي على:{" "}
                                             <span className="font-mono font-bold text-cyan-400 select-all">{SITE_CONFIG.vodafoneCashNumber}</span>
                                         </li>
-                                        <li>أرسل صورة التحويل على واتساب لاستلام كود التفعيل الخاص بك فوراً.</li>
+                                        <li>أرسل صورة التحويل على واتساب لاستلام الكود فوراً.</li>
                                     </ol>
                                     <a
-                                        href={`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encodeURIComponent(`السلام عليكم يا بشمهندس منصور، حولت اشتراك (${targetCourseForCode ? targetCourseForCode.title : "الكورس"}) وعايز أستلم كود التفعيل.`)}`}
+                                        href={`https://wa.me/${SITE_CONFIG.whatsappNumber}?text=${encodeURIComponent(`السلام عليكم يا بشمهندس منصور، حولت اشتراك (${targetItemForCode ? targetItemForCode.title : "المنصة"}) وعايز أستلم كود التفعيل.`)}`}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="mt-2 w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition"
                                     >
-                                        <span>💬</span>
-                                        <span>إرسال إيصال التحويل على واتساب</span>
+                                        <span>💬</span><span>إرسال إيصال التحويل على واتساب</span>
                                     </a>
                                 </div>
 
-                                {/* نموذج إدخال الكود */}
                                 <form onSubmit={handleActivateCode} className="space-y-3 pt-1">
-                                    <label className="block text-xs font-bold text-slate-300">أدخل كود التفعيل هنا:</label>
+                                    <label className="block text-xs font-bold text-slate-300">أدخل كود التفعيل المكون من حروف وأرقام:</label>
                                     <input
                                         type="text"
-                                        placeholder="مثال: MNS-2026"
+                                        placeholder="مثال: SEC1-48291"
                                         value={codeInput}
                                         onChange={(e) => setCodeInput(e.target.value)}
                                         className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-center font-mono text-base font-bold text-white uppercase tracking-widest focus:outline-none"
                                     />
-
                                     {codeMessage.text && (
-                                        <p className={`text-xs font-bold p-3 rounded-xl text-center ${
-                                            codeMessage.type === "success" ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
-                                        }`}>
+                                        <p className={`text-xs font-bold p-3 rounded-xl text-center ${codeMessage.type === "success" ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"}`}>
                                             {codeMessage.text}
                                         </p>
                                     )}
-
                                     <button
                                         type="submit"
-                                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition"
+                                        disabled={isFirebaseSyncing}
+                                        className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-3 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition flex items-center justify-center gap-2"
                                     >
-                                        🚀 تفعيل الكورس الآن
+                                        {isFirebaseSyncing ? "جاري التحقق من السحابة..." : "🚀 تفعيل المحتوى الآن"}
                                     </button>
                                 </form>
                             </div>
                         </div>
                     )}
 
-                    {/* ================= 🔒 نافذة تسجيل دخول الأدمن السرية ================= */}
+                    {/* نافذة الأدمن */}
                     {showAdminLogin && (
                         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                             <div className="bg-cardBg border border-slate-700 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
-                                <button
-                                    onClick={() => { setShowAdminLogin(false); setPinInput(""); }}
-                                    className="absolute top-4 left-4 text-slate-400 hover:text-white"
-                                >
-                                    ✕
-                                </button>
+                                <button onClick={() => { setShowAdminLogin(false); setPinInput(""); }} className="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button>
                                 <h3 className="text-lg font-black text-white">🔒 دخول إدارة المنصة</h3>
-                                <p className="text-xs text-slate-400">هذه اللوحة خاصة بالمهندس منصور فقط لإدارة الأكواد والحصص.</p>
+                                <p className="text-xs text-slate-400">خاصة بالمهندس منصور فقط لإدارة الأكواد والحصص.</p>
                                 <input
                                     type="password"
                                     placeholder="أدخل كلمة المرور السرية"
@@ -1223,7 +1119,7 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                 />
                                 <button
                                     onClick={() => {
-                                        if (pinInput === adminPin) {
+                                        if (pinInput === SITE_CONFIG.defaultAdminPin) {
                                             setIsAdminAuthenticated(true);
                                             setShowAdminLogin(false);
                                             setPinInput("");
@@ -1239,7 +1135,7 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                         </div>
                     )}
 
-                    {/* ================= FOOTER ================= */}
+                    {/* Footer */}
                     <footer className="border-t border-slate-800/80 bg-[#080B12] py-8 mt-16">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
                             <p>© 2026 جميع الحقوق محفوظة — منصة <strong>{SITE_CONFIG.platformName}</strong></p>
@@ -1248,11 +1144,7 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
                                     قناة يوتيوب
                                 </a>
                                 <span>•</span>
-                                {/* الزر السري لدخول المهندس منصور للوحة التحكم */}
-                                <button
-                                    onClick={() => setShowAdminLogin(true)}
-                                    className="text-slate-600 hover:text-slate-400 transition"
-                                >
+                                <button onClick={() => setShowAdminLogin(true)} className="text-slate-600 hover:text-slate-400 transition">
                                     دخول الإدارة 🔒
                                 </button>
                             </div>
@@ -1262,8 +1154,7 @@ const INITIAL_CODES = ${JSON.stringify(activationCodes, null, 4)};`;
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
