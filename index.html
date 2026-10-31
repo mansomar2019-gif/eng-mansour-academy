@@ -43,9 +43,9 @@
     <!-- Firebase SDKs (Modular v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, setDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, getDoc, setDoc, doc, updateDoc, onSnapshot, runTransaction, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        window.firebaseModules = { initializeApp, getFirestore, collection, getDocs, setDoc, doc, updateDoc, onSnapshot, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+        window.firebaseModules = { initializeApp, getFirestore, collection, getDocs, getDoc, setDoc, doc, updateDoc, onSnapshot, runTransaction, query, where, serverTimestamp, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
     </script>
 
     <style>
@@ -108,19 +108,18 @@
     </section>
   );
 
-  function Stats() {
-    const items = [{ v: "500+", l: "مشترك في قناة YouTube" }, { v: "4.9/5", l: "متوسط تقييم الطلاب" }];
+  function Stats({ courseCount }) {
+    const items = [{ v: "500+", l: "مشترك في قناة YouTube" }, { v: "4.9/5", l: "متوسط تقييم الطلاب" }, { v: String(courseCount == null ? 0 : courseCount), l: "كورسات متاحة حاليًا" }];
     return (
       <section className="amc-sec max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-2xl mx-auto">
           {items.map(i => (
-            <div key={i.l} className="bg-cardBg border border-slate-800 rounded-3xl p-5 text-center">
-              <div className="text-3xl sm:text-4xl font-black text-accent">{i.v}</div>
-              <div className="text-xs sm:text-sm text-slate-400 mt-1">{i.l}</div>
+            <div key={i.l} className="bg-cardBg border border-slate-800 rounded-3xl p-3 sm:p-5 text-center">
+              <div className="text-2xl min-[420px]:text-3xl sm:text-4xl font-black text-accent">{i.v}</div>
+              <div className="text-[11px] min-[420px]:text-xs sm:text-sm text-slate-400 mt-1 leading-snug">{i.l}</div>
             </div>
           ))}
         </div>
-        <p className="text-center text-[11px] text-slate-500 mt-3">أرقام تجريبية مبدئية وليست بيانات مؤكدة.</p>
       </section>
     );
   }
@@ -132,13 +131,23 @@
           <img src={IMG.portrait} alt="المهندس منصور عمر منصور رجب" loading="lazy" className="md:col-span-2 w-56 sm:w-72 mx-auto rounded-3xl bg-gradient-to-b from-slate-800 to-slate-900" />
           <div className="md:col-span-3 space-y-3 text-slate-300 leading-relaxed">
             <h4 className="text-xl font-black text-white">المهندس منصور عمر منصور رجب</h4>
-            <p>طالب بكلية الحاسبات والذكاء الاصطناعي، قسم Artificial Intelligence.</p>
-            <p>مهتم بالبرمجة والذكاء الاصطناعي والتعليم، وبيشرح للطلاب بأسلوب مبسط من الأساس لحد التطبيق العملي.</p>
+            <p>طالب بكلية <strong>الحاسبات والذكاء الاصطناعي</strong>، قسم <strong>Artificial Intelligence</strong>.</p>
+            <p>مهتم <strong>بالبرمجة والذكاء الاصطناعي والتعليم</strong>، وبيشرح للطلاب <strong>بأسلوب مبسط</strong> من الأساس لحد <strong>التطبيق العملي</strong>.</p>
           </div>
         </div>
       </Sec>
     );
   }
+
+  const BRAND = {
+    whatsapp: "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z",
+    telegram: "M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z",
+    youtube: "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
+    tiktok: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"
+  };
+  const BrandIcon = ({ name, className }) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className={className || "w-4 h-4"}><path d={BRAND[name]} /></svg>
+  );
 
   const DEF = {
     html: '<h1 id="t">أهلاً يا مبرمج!</h1>\n<button id="b">اضغط هنا</button>',
@@ -167,7 +176,7 @@
     };
     const clear = () => { docs.current = { html: "", css: "", js: "" }; write(tab, ""); frame.current.srcdoc = ""; };
     return (
-      <Sec id="editor" title="جرّب الكود بنفسك" sub="اكتب HTML وCSS وJavaScript واضغط تشغيل. المعاينة معزولة داخل iframe آمن.">
+      <Sec id="editor" title="جرّب الكود بنفسك" sub="اكتب HTML وCSS وJavaScript واضغط تشغيل.">
         <div className="grid lg:grid-cols-2 gap-4" dir="ltr">
           <div className="bg-cardBg border border-slate-800 rounded-3xl overflow-hidden" data-lenis-prevent>
             <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-800 bg-slate-800/60">
@@ -235,20 +244,20 @@
 
   function Contact({ wa, yt }) {
     const L = [
-      ["واتساب", "https://wa.me/" + wa],
-      ["Telegram", "https://t.me/+I1sd1fofszgzNTE8"],
-      ["TikTok", "https://www.tiktok.com/@eng_mansour_ragab"],
-      ["YouTube", yt]
+      ["واتساب", "https://wa.me/" + wa, "whatsapp"],
+      ["Telegram", "https://t.me/+I1sd1fofszgzNTE8", "telegram"],
+      ["TikTok", "https://www.tiktok.com/@eng_mansour_ragab", "tiktok"],
+      ["YouTube", yt, "youtube"]
     ];
     return (
       <Sec id="contact" title="التواصل والدعم الفني" sub="أي استفسار عن الاشتراك أو مشكلة في المشاهدة، كلمنا مباشرة.">
         <div className="flex flex-wrap gap-3">
-          {L.map(l => <a key={l[0]} href={l[1]} target="_blank" rel="noreferrer" className="bg-cardBg border border-slate-700 hover:border-accent text-white font-bold px-5 py-3 rounded-xl text-sm transition">{l[0]}</a>)}
+          {L.map(l => <a key={l[0]} href={l[1]} target="_blank" rel="noreferrer" className="bg-cardBg border border-slate-700 hover:border-accent text-white font-bold px-5 py-3 rounded-xl text-sm transition inline-flex items-center gap-2"><span>{l[0]}</span><BrandIcon name={l[2]} className="w-4 h-4 shrink-0" /></a>)}
         </div>
       </Sec>
     );
   }
-  window.AMC_UI = { Stats, About, CodePlayground, Certs, Faq, Contact };
+  window.AMC_UI = { Stats, About, CodePlayground, Certs, Faq, Contact, BrandIcon };
 })();
 
     </script>
@@ -260,9 +269,11 @@
             instructorTitle: "المهندس منصور",
             whatsappNumber: "201148475702",
             vodafoneCashNumber: "01097762007",
-            youtubeChannelUrl: "https://www.youtube.com/@MansourRagab1",
-            defaultAdminPin: "Mansour2026"
+            youtubeChannelUrl: "https://www.youtube.com/@MansourRagab1"
         };
+
+        // UID حساب المدير الوحيد (ليس سرًا؛ الحماية الفعلية في firestore.rules)
+        const ADMIN_UID = "5ryV6ub9WePFT5EowJOnBpq4BS93";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCQn7yVkEuu8Vn_lApdc7puhCCTc1rhUpM",
@@ -354,10 +365,9 @@
             });
 
             const [activationCodes, setActivationCodes] = useState([]);
-            const [unlockedItems, setUnlockedItems] = useState(() => {
-                const saved = localStorage.getItem("mansour_unlocked_items_v3");
-                return saved ? JSON.parse(saved) : [];
-            });
+            // الصلاحيات تأتي من مستندات enrollments في Firestore فقط (لا localStorage)
+            const [unlockedItems, setUnlockedItems] = useState([]);
+            const [lessonContent, setLessonContent] = useState({});
 
             const [selectedStage, setSelectedStage] = useState("الكل");
             const [activeCourse, setActiveCourse] = useState(null);
@@ -369,9 +379,7 @@
             const [quizSelected, setQuizSelected] = useState(null);
 
             // لوحة الأدمن
-            const [showAdminLogin, setShowAdminLogin] = useState(false);
-            const [pinInput, setPinInput] = useState("");
-            const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+            const [adminOpen, setAdminOpen] = useState(false);
             const [adminTab, setAdminTab] = useState("lessons"); // lessons | codes | courses
             const [genTargetId, setGenTargetId] = useState("ALL");
             const [genCount, setGenCount] = useState(5);
@@ -379,6 +387,9 @@
 
             // حالة مستخدم جوجل الحالي
             const [user, setUser] = useState(null);
+            // المدير = حساب جوجل بنفس الـ UID فقط. تُشتق الحالة من الحساب الحالي فتختفي اللوحة تلقائيًا عند الخروج أو تغيير الحساب.
+            const isAdmin = !!user && user.uid === ADMIN_UID;
+            const isAdminAuthenticated = adminOpen && isAdmin;
 
             useEffect(() => {
                 if (window.firebaseModules && firebaseConfig.apiKey) {
@@ -409,6 +420,7 @@
                     const { initializeApp, getAuth, signOut } = window.firebaseModules;
                     const auth = getAuth(initializeApp(firebaseConfig));
                     await signOut(auth);
+                    setAdminOpen(false); setActiveLesson(null); setUnlockedItems([]); setLessonContent({});
                 } catch (error) {
                     console.error("Logout Error:", error);
                 }
@@ -441,36 +453,21 @@
                 description: ""
             });
 
-            // مزامنة حية مع Firebase Firestore
+            // مزامنة حية للكورسات (قراءة عامة مسموحة في القواعد)
             useEffect(() => {
                 let unsubscribe = () => {};
                 if (window.firebaseModules && firebaseConfig.apiKey) {
                     try {
-                        const { initializeApp, getFirestore, collection, onSnapshot, getDocs, setDoc, doc } = window.firebaseModules;
-                        const app = initializeApp(firebaseConfig);
-                        const db = getFirestore(app);
-
-                        // مزامنة الأكواد
-                        unsubscribe = onSnapshot(collection(db, "codes"), (snapshot) => {
-                            const cloudCodes = [];
-                            snapshot.forEach(docSnap => cloudCodes.push(docSnap.data()));
-                            setActivationCodes(cloudCodes);
-                        });
-
-                        // مزامنة الكورسات والحصص
-                        getDocs(collection(db, "courses")).then(snap => {
+                        const { initializeApp, getFirestore, collection, onSnapshot } = window.firebaseModules;
+                        const db = getFirestore(initializeApp(firebaseConfig));
+                        unsubscribe = onSnapshot(collection(db, "courses"), (snap) => {
                             if (!snap.empty) {
                                 const cloudCourses = [];
                                 snap.forEach(d => cloudCourses.push(d.data()));
                                 setCourses(cloudCourses);
                                 localStorage.setItem("mansour_courses_v3", JSON.stringify(cloudCourses));
-                            } else {
-                                INITIAL_COURSES.forEach(async (c) => {
-                                    try { await setDoc(doc(db, "courses", c.id), c); } catch(e){}
-                                });
                             }
-                        }).catch(console.error);
-
+                        }, (err) => console.error(err));
                     } catch (err) {
                         console.log("Firebase sync err:", err);
                     }
@@ -478,13 +475,77 @@
                 return () => unsubscribe();
             }, []);
 
+            // قائمة الأكواد: تُحمّل للمدير فقط (القواعد ترفض list لأي حساب آخر)
+            useEffect(() => {
+                if (!isAdmin || !window.firebaseModules) { setActivationCodes([]); return; }
+                let unsubscribe = () => {};
+                try {
+                    const { initializeApp, getFirestore, collection, onSnapshot, getDocs, setDoc, doc } = window.firebaseModules;
+                    const db = getFirestore(initializeApp(firebaseConfig));
+                    unsubscribe = onSnapshot(collection(db, "codes"), (snapshot) => {
+                        const cloudCodes = [];
+                        snapshot.forEach(docSnap => cloudCodes.push(docSnap.data()));
+                        setActivationCodes(cloudCodes);
+                    }, (err) => console.error(err));
+                    // تهيئة أولية للكورسات إذا كانت المجموعة فارغة (مسموح للمدير فقط)
+                    getDocs(collection(db, "courses")).then(snap => {
+                        if (snap.empty) INITIAL_COURSES.forEach(async (c) => { try { await saveCourseSecure(c); } catch(e){} });
+                    }).catch(console.error);
+                } catch (err) { console.log("Admin sync err:", err); }
+                return () => { unsubscribe(); setActivationCodes([]); };
+            }, [isAdmin]);
+
             useEffect(() => {
                 localStorage.setItem("mansour_courses_v3", JSON.stringify(courses));
             }, [courses]);
 
+            // حذف المفتاح القديم نهائيًا: لم يعد له أي دور في الصلاحيات
             useEffect(() => {
-                localStorage.setItem("mansour_unlocked_items_v3", JSON.stringify(unlockedItems));
-            }, [unlockedItems]);
+                try { localStorage.removeItem("mansour_unlocked_items_v3"); } catch (e) {}
+            }, []);
+
+            // اشتراكات الطالب الحالي فقط (استعلام مقيّد بـ studentUID، والقواعد تتحقق منه)
+            const uid = user ? user.uid : null;
+            useEffect(() => {
+                setUnlockedItems([]);
+                setLessonContent({});
+                if (!uid || !window.firebaseModules) return;
+                let unsubscribe = () => {};
+                try {
+                    const { initializeApp, getFirestore, collection, query, where, onSnapshot } = window.firebaseModules;
+                    const db = getFirestore(initializeApp(firebaseConfig));
+                    unsubscribe = onSnapshot(
+                        query(collection(db, "enrollments"), where("studentUID", "==", uid)),
+                        (snap) => {
+                            const ids = [];
+                            snap.forEach(d => { const e = d.data(); if (e && e.active === true && e.courseId) ids.push(e.courseId); });
+                            setUnlockedItems(ids);
+                        },
+                        () => setUnlockedItems([])
+                    );
+                } catch (err) { setUnlockedItems([]); }
+                return () => { unsubscribe(); setUnlockedItems([]); setLessonContent({}); };
+            }, [uid]);
+
+            // محتوى الحصة (videoId/pdfUrl) يُجلب من lessonContent؛ القواعد تشترط مجانية الحصة أو وجود اشتراك
+            useEffect(() => {
+                if (!activeLesson || !window.firebaseModules) return;
+                const permitted = activeLesson.isFree || (activeCourse && isItemUnlocked(activeCourse.id, activeLesson.id));
+                if (!permitted || lessonContent[activeLesson.id]) return;
+                let cancelled = false;
+                (async () => {
+                    try {
+                        const { initializeApp, getFirestore, doc, getDoc } = window.firebaseModules;
+                        const db = getFirestore(initializeApp(firebaseConfig));
+                        const snap = await getDoc(doc(db, "lessonContent", activeLesson.id));
+                        if (!cancelled && snap.exists()) setLessonContent(prev => ({ ...prev, [activeLesson.id]: snap.data() }));
+                    } catch (e) { /* بلا تفاصيل للمستخدم */ }
+                })();
+                return () => { cancelled = true; };
+            }, [activeLesson, activeCourse, unlockedItems, uid]);
+
+            // دمج بيانات الحصة العامة مع محتواها المحمي (أو البيانات المضمنة القديمة قبل الترحيل)
+            const contentOf = (lesson) => ({ ...(lesson || {}), ...(lessonContent[lesson && lesson.id] || {}) });
 
             const isItemUnlocked = (courseId, lessonId) => {
                 if (unlockedItems.includes("ALL") || unlockedItems.includes(courseId)) return true;
@@ -492,7 +553,7 @@
                 return false;
             };
 
-            // تفعيل الكود السحابي
+            // تفعيل الكود: قراءة مستند الكود المُدخل فقط + معاملة ذرية (لا يتم تحميل قائمة الأكواد)
             const handleActivateCode = async (e) => {
                 e.preventDefault();
                 const cleaned = codeInput.trim().toUpperCase();
@@ -500,48 +561,40 @@
                     setCodeMessage({ type: "error", text: "يرجى كتابة كود التفعيل" });
                     return;
                 }
+                if (!user) {
+                    setCodeMessage({ type: "error", text: "🔐 سجّل دخولك بحساب جوجل أولاً (زر «دخول بجوجل» بالأعلى) ثم أدخل الكود." });
+                    return;
+                }
+                const GENERIC_FAIL = "❌ كود غير صالح أو مستخدم من قبل. تأكد من كتابته بشكل سليم أو تواصل مع المهندس منصور.";
+                if (!/^MF-[0-9A-F]{32}$/.test(cleaned)) {
+                    setCodeMessage({ type: "error", text: GENERIC_FAIL });
+                    return;
+                }
 
                 setIsFirebaseSyncing(true);
                 try {
-                    const { initializeApp, getFirestore, doc, updateDoc, collection, getDocs } = window.firebaseModules || {};
-                    let currentCodes = activationCodes;
+                    const { initializeApp, getFirestore, doc, runTransaction, serverTimestamp } = window.firebaseModules || {};
+                    const db = getFirestore(initializeApp(firebaseConfig));
+                    const ref = doc(db, "codes", cleaned);
 
-                    if (window.firebaseModules) {
-                        const db = getFirestore(initializeApp(firebaseConfig));
-                        const freshSnap = await getDocs(collection(db, "codes"));
-                        if (!freshSnap.empty) {
-                            currentCodes = [];
-                            freshSnap.forEach(d => currentCodes.push(d.data()));
-                            setActivationCodes(currentCodes);
-                        }
-                    }
-
-                    const foundCode = currentCodes.find(c => c.code.toUpperCase() === cleaned);
-                    if (!foundCode) {
-                        setCodeMessage({ type: "error", text: "❌ كود غير صحيح! تأكد من كتابته بشكل سليم أو تواصل مع المهندس منصور." });
-                        setIsFirebaseSyncing(false);
-                        return;
-                    }
-
-                    if (foundCode.used) {
-                        setCodeMessage({ type: "error", text: "🔒 هذا الكود تم استخدامه وتفعيله مسبقاً! كل كود صالح لمرة واحدة فقط." });
-                        setIsFirebaseSyncing(false);
-                        return;
-                    }
-
-                    if (window.firebaseModules) {
-                        const db = getFirestore(initializeApp(firebaseConfig));
-                        await updateDoc(doc(db, "codes", foundCode.code), {
-                            used: true,
-                            usedAt: new Date().toISOString()
+                    // معاملة ذرية: استهلاك الكود + إنشاء الاشتراك معًا أو لا شيء
+                    await runTransaction(db, async (tx) => {
+                        const snap = await tx.get(ref);
+                        if (!snap.exists()) throw new Error("INVALID");
+                        const data = snap.data();
+                        if (data.used !== false || !data.targetId) throw new Error("INVALID");
+                        tx.update(ref, { used: true, usedAt: serverTimestamp(), usedBy: user.uid });
+                        tx.set(doc(db, "enrollments", user.uid + "_" + data.targetId), {
+                            studentUID: user.uid,
+                            courseId: data.targetId,
+                            active: true,
+                            activatedAt: serverTimestamp(),
+                            codeId: cleaned
                         });
-                    }
+                    });
 
-                    const updatedUnlocked = [...unlockedItems, foundCode.targetId];
-                    setUnlockedItems(updatedUnlocked);
-                    localStorage.setItem("mansour_unlocked_items_v3", JSON.stringify(updatedUnlocked));
-
-                    setCodeMessage({ type: "success", text: "🎉 تم التفعيل بنجاح! تم فتح المحتوى لك على هذا الجهاز." });
+                    // لا نكتب أي صلاحية محليًا: المستمع على enrollments يحدّث الواجهة تلقائيًا
+                    setCodeMessage({ type: "success", text: "🎉 تم التفعيل بنجاح! تم فتح المحتوى لك على حسابك." });
                     setCodeInput("");
                     setTimeout(() => {
                         setShowPaymentModal(false);
@@ -549,23 +602,51 @@
                     }, 1700);
 
                 } catch (err) {
-                    console.error(err);
-                    setCodeMessage({ type: "error", text: "حدث خطأ في الاتصال. يرجى مراجعة اتصال الإنترنت." });
+                    // رسالة عامة دائمًا: لا نكشف هل الكود غير موجود أم مستخدم أم مرفوض
+                    if (err && (err.message === "INVALID" || err.code === "permission-denied" || err.code === "aborted" || err.code === "failed-precondition")) {
+                        setCodeMessage({ type: "error", text: "❌ كود غير صالح أو مستخدم من قبل. تأكد من كتابته بشكل سليم أو تواصل مع المهندس منصور." });
+                    } else {
+                        setCodeMessage({ type: "error", text: "حدث خطأ في الاتصال. يرجى مراجعة اتصال الإنترنت." });
+                    }
                 } finally {
                     setIsFirebaseSyncing(false);
                 }
             };
 
             // توليد الأكواد
+            // يفصل بيانات الحصة العامة عن محتواها المحمي (videoId/pdfUrl) ويحفظ الاثنين (للمدير فقط)
+            const saveCourseSecure = async (course) => {
+                const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules;
+                const db = getFirestore(initializeApp(firebaseConfig));
+                const publicLessons = [];
+                for (const l of (course.lessons || [])) {
+                    if (l.videoId || l.pdfUrl) {
+                        await setDoc(doc(db, "lessonContent", l.id), {
+                            courseId: course.id, lessonId: l.id, isFree: !!l.isFree,
+                            videoId: l.videoId || "", pdfUrl: l.pdfUrl || ""
+                        });
+                    }
+                    if (l.isFree) publicLessons.push(l);
+                    else { const { videoId, pdfUrl, ...rest } = l; publicLessons.push(rest); }
+                }
+                await setDoc(doc(db, "courses", course.id), { ...course, lessons: publicLessons });
+            };
+
             const handleGenerateCodes = async () => {
-                const prefix = genTargetId === "ALL" ? "VIP" : genTargetId.substring(0, 4).toUpperCase();
+                if (!isAdmin) { alert("هذه العملية للمدير فقط."); return; }
                 const newBatch = [];
-                const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules || {};
+                const { getFirestore, doc, setDoc, getDoc, initializeApp } = window.firebaseModules || {};
                 const db = window.firebaseModules ? getFirestore(initializeApp(firebaseConfig)) : null;
 
+                // 128-bit عشوائية حقيقية: 16 بايت من crypto.getRandomValues => 32 خانة Hex
+                const newCodeString = () => {
+                    const bytes = new Uint8Array(16);
+                    crypto.getRandomValues(bytes);
+                    return "MF-" + Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+                };
+                let saved = 0;
                 for (let i = 0; i < Number(genCount); i++) {
-                    const randomNum = Math.floor(10000 + Math.random() * 90000);
-                    const codeStr = `${prefix}-${randomNum}`;
+                    const codeStr = newCodeString();
                     const codeData = {
                         code: codeStr,
                         targetId: genTargetId,
@@ -576,11 +657,15 @@
 
                     if (db) {
                         try {
-                            await setDoc(doc(db, "codes", codeStr), codeData);
-                        } catch(e) { console.error(e); }
+                            const ref = doc(db, "codes", codeStr);
+                            if ((await getDoc(ref)).exists()) { i--; continue; } // لا تكرار
+                            await setDoc(ref, codeData);
+                            saved++;
+                        } catch(e) { /* لا نطبع الأكواد */ }
                     }
                 }
-                alert(`✅ تم توليد وحفظ ${genCount} أكواد سحابياً بنجاح!`);
+                if (saved === Number(genCount)) alert(`✅ تم توليد وحفظ ${genCount} أكواد سحابياً بنجاح!`);
+                else alert(`⚠️ تم حفظ ${saved} من ${genCount} فقط. تأكد من تسجيل الدخول بحساب المدير ونشر قواعد Firestore.`);
             };
 
             // إضافة الحصة الشاملة الجديدة بالثامنيل والسعر والاختبار والـ PDF
@@ -617,11 +702,7 @@
                 const updatedCourses = courses.map(c => {
                     if (c.id === newLesson.courseId) {
                         const updated = { ...c, lessons: [...c.lessons, lessonObj] };
-                        if (window.firebaseModules) {
-                            const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules;
-                            const db = getFirestore(initializeApp(firebaseConfig));
-                            setDoc(doc(db, "courses", c.id), updated).catch(console.error);
-                        }
+                        if (window.firebaseModules && isAdmin) saveCourseSecure(updated).catch(() => alert("تعذر الحفظ. تأكد من تسجيل الدخول بحساب المدير ونشر القواعد."));
                         return updated;
                     }
                     return c;
@@ -653,11 +734,7 @@
                 const updated = courses.map(c => {
                     if (c.id === courseId) {
                         const mod = { ...c, lessons: c.lessons.filter(l => l.id !== lessonId) };
-                        if (window.firebaseModules) {
-                            const { getFirestore, doc, setDoc, initializeApp } = window.firebaseModules;
-                            const db = getFirestore(initializeApp(firebaseConfig));
-                            setDoc(doc(db, "courses", c.id), mod).catch(console.error);
-                        }
+                        if (window.firebaseModules && isAdmin) saveCourseSecure(mod).catch(() => alert("تعذر الحفظ. تأكد من تسجيل الدخول بحساب المدير ونشر القواعد."));
                         return mod;
                     }
                     return c;
@@ -671,22 +748,22 @@
                 <div className="min-h-screen flex flex-col justify-between bg-darkBg text-slate-100">
                     {/* Header */}
                     <header className="sticky top-0 z-40 backdrop-blur-md bg-[#07110B]/90 border-b border-slate-800/80">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-                            <div onClick={() => { setActiveCourse(null); setIsAdminAuthenticated(false); }} className="flex items-center gap-3 cursor-pointer group">
-                                <img src={window.AMC_IMG.logo} alt="شعار مبرمج المستقبل" width="48" height="48" className="w-12 h-12 rounded-2xl object-cover ring-2 ring-accent/60 shadow-lg shadow-accent/30" />
-                                <div>
-                                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
-                                        <span>{SITE_CONFIG.instructorTitle}</span>
-                                        <span className="text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">مبرمج المستقبل</span>
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-0 sm:h-20 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-2 gap-y-2">
+                            <div onClick={() => { setActiveCourse(null); setAdminOpen(false); }} className="flex items-center gap-2 sm:gap-3 cursor-pointer group min-w-0 flex-1 sm:flex-none">
+                                <img src={window.AMC_IMG.logo} alt="شعار مبرمج المستقبل" width="48" height="48" className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-2xl object-cover ring-2 ring-accent/60 shadow-lg shadow-accent/30" />
+                                <div className="min-w-0">
+                                    <h1 className="text-base sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                                        <span className="truncate">{SITE_CONFIG.instructorTitle}</span>
+                                        <span className="hidden min-[480px]:inline-block shrink-0 text-xs bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">مبرمج المستقبل</span>
                                     </h1>
-                                    <p className="text-xs text-slate-400">مبرمج المستقبل | البرمجة والذكاء الاصطناعي</p>
+                                    <p className="text-[11px] sm:text-xs text-slate-400 truncate">مبرمج المستقبل | البرمجة والذكاء الاصطناعي</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="contents sm:flex sm:items-center sm:gap-3">
                                 {/* زر تسجيل الدخول بحساب جوجل */}
                                 {user ? (
-                                    <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-xl">
+                                    <div className="order-2 sm:order-none shrink-0 flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-xl">
                                         <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover" />
                                         <span className="text-xs font-bold text-white hidden sm:inline">{user.displayName}</span>
                                         <button 
@@ -700,7 +777,7 @@
                                 ) : (
                                     <button
                                         onClick={handleGoogleLogin}
-                                        className="bg-white hover:bg-slate-100 text-slate-900 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2"
+                                        className="order-2 sm:order-none shrink-0 bg-white hover:bg-slate-100 text-slate-900 font-bold px-3.5 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-2"
                                     >
                                         <svg className="w-4 h-4" viewBox="0 0 24 24">
                                             <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -714,7 +791,7 @@
 
                                 <button
                                     onClick={() => { setTargetItemForCode(null); setShowPaymentModal(true); }}
-                                    className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition flex items-center gap-2"
+                                    className="order-3 sm:order-none w-full sm:w-auto justify-center whitespace-nowrap bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold px-4 py-2 sm:py-2.5 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition flex items-center gap-2"
                                 >
                                     <span>🔑</span><span>معاك كود تفعيل؟</span>
                                 </button>
@@ -741,7 +818,7 @@
                                             <h2 className="text-2xl font-black text-white mt-2">إدارة الحصص والكورسات يا {SITE_CONFIG.instructorTitle} 👋</h2>
                                             <p className="text-slate-400 text-sm">أضف أي حصة جديدة بكل تفاصيلها (الثامنيل، السعر المنفرد، ملزمة الـ PDF، وسؤال الاختبار التفاعلي) ومزامنتها سحابياً فوراً.</p>
                                         </div>
-                                        <button onClick={() => setIsAdminAuthenticated(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold transition">
+                                        <button onClick={() => setAdminOpen(false)} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold transition">
                                             العودة لواجهة الطلاب ⬅️
                                         </button>
                                     </div>
@@ -1096,7 +1173,7 @@
                                             <div className="bg-cardBg border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-5">
                                                 <div className="video-wrapper shadow-2xl border border-slate-800">
                                                     <iframe
-                                                        src={`https://www.youtube.com/embed/${activeLesson.videoId}?rel=0&modestbranding=1&enablejsapi=1`}
+                                                        src={`https://www.youtube.com/embed/${contentOf(activeLesson).videoId || ""}?rel=0&modestbranding=1&enablejsapi=1`}
                                                         title={activeLesson.title}
                                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                         referrerPolicy="strict-origin-when-cross-origin"
@@ -1108,7 +1185,7 @@
                                                         <span className="text-xs text-cyan-400 font-bold">{activeCourse.title}</span>
                                                         <h2 className="text-xl font-black text-white mt-1">{activeLesson.title}</h2>
                                                     </div>
-                                                    <a href={activeLesson.pdfUrl} target="_blank" rel="noreferrer" className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-purple-600/25">
+                                                    <a href={contentOf(activeLesson).pdfUrl} target="_blank" rel="noreferrer" className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition flex items-center gap-2 shadow-lg shadow-purple-600/25">
                                                         <span>📄</span><span>تحميل ملزمة الحصة PDF</span>
                                                     </a>
                                                 </div>
@@ -1231,7 +1308,7 @@
                                         </div>
                                     </div>
                                 </section>
-                                <window.AMC_UI.Stats />
+                                <window.AMC_UI.Stats courseCount={courses.length} />
 
                                 <section id="courses-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-8">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1342,7 +1419,7 @@
                                     <label className="block text-xs font-bold text-slate-300">أدخل كود التفعيل المكون من حروف وأرقام:</label>
                                     <input
                                         type="text"
-                                        placeholder="مثال: SEC1-48291"
+                                        placeholder="MF-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
                                         value={codeInput}
                                         onChange={(e) => setCodeInput(e.target.value)}
                                         className="w-full bg-slate-900 border border-slate-700 focus:border-cyan-500 rounded-xl px-4 py-3 text-center font-mono text-base font-bold text-white uppercase tracking-widest focus:outline-none"
@@ -1364,54 +1441,24 @@
                         </div>
                     )}
 
-                    {/* نافذة الأدمن */}
-                    {showAdminLogin && (
-                        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-cardBg border border-slate-700 rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
-                                <button onClick={() => { setShowAdminLogin(false); setPinInput(""); }} className="absolute top-4 left-4 text-slate-400 hover:text-white">✕</button>
-                                <h3 className="text-lg font-black text-white">🔒 دخول إدارة المنصة</h3>
-                                <p className="text-xs text-slate-400">خاصة بالمهندس منصور فقط لإدارة الأكواد والحصص.</p>
-                                <input
-                                    type="password"
-                                    placeholder="أدخل كلمة المرور السرية"
-                                    value={pinInput}
-                                    onChange={(e) => setPinInput(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"
-                                />
-                                <button
-                                    onClick={() => {
-                                        if (pinInput === SITE_CONFIG.defaultAdminPin) {
-                                            setIsAdminAuthenticated(true);
-                                            setShowAdminLogin(false);
-                                            setPinInput("");
-                                        } else {
-                                            alert("كلمة المرور غير صحيحة!");
-                                        }
-                                    }}
-                                    className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 rounded-xl text-sm transition"
-                                >
-                                    دخول لوحة التحكم
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
                     {/* Footer */}
                     <footer className="border-t border-slate-800/80 bg-[#050B07] py-8 mt-16">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
                             <p>© 2026 جميع الحقوق محفوظة — منصة <strong>{SITE_CONFIG.platformName}</strong></p>
-                            <div className="flex items-center gap-4">
-                                <a href={SITE_CONFIG.youtubeChannelUrl} target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition">
-                                    قناة يوتيوب
+                            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                                <a href={SITE_CONFIG.youtubeChannelUrl} target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition inline-flex items-center gap-1.5">
+                                    <span>قناة يوتيوب</span><window.AMC_UI.BrandIcon name="youtube" className="w-4 h-4 shrink-0" />
                                 </a>
                                 <span>•</span>
-                                <a href="https://t.me/+I1sd1fofszgzNTE8" target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition">تيليجرام</a>
+                                <a href="https://t.me/+I1sd1fofszgzNTE8" target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition inline-flex items-center gap-1.5"><span>تيليجرام</span><window.AMC_UI.BrandIcon name="telegram" className="w-4 h-4 shrink-0" /></a>
                                 <span>•</span>
-                                <a href="https://www.tiktok.com/@eng_mansour_ragab" target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition">تيك توك</a>
-                                <span>•</span>
-                                <button onClick={() => setShowAdminLogin(true)} className="text-slate-600 hover:text-slate-400 transition">
-                                    دخول الإدارة 🔒
-                                </button>
+                                <a href="https://www.tiktok.com/@eng_mansour_ragab" target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition inline-flex items-center gap-1.5"><span>تيك توك</span><window.AMC_UI.BrandIcon name="tiktok" className="w-4 h-4 shrink-0" /></a>
+                                {isAdmin && (<>
+                                    <span>•</span>
+                                    <button onClick={() => setAdminOpen(true)} className="text-slate-600 hover:text-slate-400 transition">
+                                        دخول الإدارة 🔒
+                                    </button>
+                                </>)}
                             </div>
                         </div>
                     </footer>
@@ -1486,8 +1533,22 @@
     var pts = new T.Points(g, new T.PointsMaterial({ color: 0x39e75f, size: 0.05, transparent: true, opacity: 0.8, blending: T.AdditiveBlending, depthWrite: false }));
     sc.add(grp, pts);
     var mx = 0, my = 0, vis = true, raf = 0, alive = true;
-    function size() { var w = hero.clientWidth, h = hero.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); grp.position.x = w > 900 ? -3.4 : 0; grp.scale.setScalar(w > 900 ? 1 : 0.75); }
-    size(); var ro = new ResizeObserver(size); ro.observe(hero);
+    function size() {
+      var w = hero.clientWidth, h = hero.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix();
+      var two = matchMedia('(min-width:1024px)').matches;
+      grp.position.x = two ? -3.4 : 0; grp.scale.setScalar(two ? 1 : 0.62);
+      grp.position.y = 0;
+      if (!two) {
+        /* تخطيط عمودي: نحرّك الشكل خلف صورة المدرّس بدل أن يمر خلف العنوان والوصف */
+        var pe = $('img[alt="المهندس منصور"]', hero), o = pe, y = 0;
+        while (o && o !== hero) { y += o.offsetTop; o = o.offsetParent; }
+        if (pe && o === hero && h > 0) {
+          var cy = (y + pe.offsetHeight / 2) / h, vh = 2 * cam.position.z * Math.tan(cam.fov * Math.PI / 360);
+          grp.position.y = (0.5 - cy) * vh;
+        }
+      }
+    }
+    size(); var ro = new ResizeObserver(size); ro.observe(hero); var pimg = $('img[alt="المهندس منصور"]', hero); if (pimg && !pimg.complete) pimg.addEventListener('load', size);
     var onm = function (e) { mx = e.clientX / innerWidth - 0.5; my = e.clientY / innerHeight - 0.5; };
     if (fine) addEventListener('pointermove', onm, { passive: true });
     var io = new IntersectionObserver(function (e) { vis = e[0].isIntersecting; }); io.observe(hero);
