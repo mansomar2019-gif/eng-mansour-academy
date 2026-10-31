@@ -385,6 +385,11 @@
             const [genCount, setGenCount] = useState(5);
             const [isFirebaseSyncing, setIsFirebaseSyncing] = useState(false);
 
+            // إنشاء كورس جديد من لوحة الإدارة
+            const EMPTY_NEW_COURSE = { title: "", stage: "", customStage: "", price: "", thumbnail: "", description: "", badge: "" };
+            const [courseDraft, setCourseDraft] = useState(EMPTY_NEW_COURSE);
+            const [creatingCourse, setCreatingCourse] = useState(false);
+
             // حالة مستخدم جوجل الحالي
             const [user, setUser] = useState(null);
             // المدير = حساب جوجل بنفس الـ UID فقط. تُشتق الحالة من الحساب الحالي فتختفي اللوحة تلقائيًا عند الخروج أو تغيير الحساب.
@@ -632,6 +637,44 @@
                 await setDoc(doc(db, "courses", course.id), { ...course, lessons: publicLessons });
             };
 
+            // المراحل المتاحة عند إنشاء كورس: المراحل الأساسية + أي مرحلة موجودة في الكورسات الحالية
+            const courseStageOptions = [...new Set(["الصف الأول الثانوي", "الصف الثاني الثانوي - بكالوريا", "تأسيس البرمجة", ...courses.map(c => c.stage).filter(Boolean)])];
+
+            // إنشاء كورس جديد: معرّف تلقائي فريد (لا يعتمد على الاسم) + حفظ في Firestore للمدير فقط
+            const handleCreateCourse = async (e) => {
+                if (e && e.preventDefault) e.preventDefault();
+                if (creatingCourse) return;
+                if (!isAdmin) { alert("هذه العملية للمدير فقط."); return; }
+                if (!window.firebaseModules) { alert("تعذر الاتصال بـ Firebase. حدّث الصفحة وحاول مرة أخرى."); return; }
+                const title = courseDraft.title.trim();
+                const stage = (courseDraft.stage === "__custom__" ? courseDraft.customStage : courseDraft.stage).trim();
+                const priceRaw = String(courseDraft.price).trim();
+                const price = Number(priceRaw);
+                const thumb = courseDraft.thumbnail.trim();
+                if (!title) { alert("اكتب اسم الكورس."); return; }
+                if (!stage) { alert("اختر المرحلة الدراسية."); return; }
+                if (priceRaw === "" || !Number.isFinite(price) || price < 0) { alert("اكتب سعرًا صحيحًا (رقم أكبر من أو يساوي صفر)."); return; }
+                if (thumb && !/^https?:\/\//i.test(thumb)) { alert("رابط صورة الغلاف يجب أن يبدأ بـ http:// أو https://"); return; }
+                const fallbackThumb = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#101C14"/><stop offset="1" stop-color="#165f2a"/></linearGradient></defs><rect width="900" height="600" fill="url(#g)"/><text x="450" y="330" font-size="140" text-anchor="middle" fill="#39E75F" font-family="monospace">&lt;/&gt;</text></svg>');
+                setCreatingCourse(true);
+                try {
+                    const { getFirestore, doc, collection, initializeApp } = window.firebaseModules;
+                    const db = getFirestore(initializeApp(firebaseConfig));
+                    const id = doc(collection(db, "courses")).id;
+                    const created = { id, title, stage, price, thumbnail: thumb || fallbackThumb, badge: courseDraft.badge, description: courseDraft.description.trim(), lessons: [] };
+                    await saveCourseSecure(created);
+                    setCourses(prev => prev.some(c => c.id === id) ? prev : [...prev, created]);
+                    setCourseDraft(EMPTY_NEW_COURSE);
+                    setAdminTab("courses");
+                    alert("✅ تم إنشاء الكورس وحفظه، وظهر للطلاب تحت مرحلته. تقدر دلوقتي تضيف له حصص وتولّد له أكواد.");
+                } catch (err) {
+                    console.error(err);
+                    alert("تعذر إنشاء الكورس. تأكد من تسجيل الدخول بحساب المدير ونشر قواعد Firestore.");
+                } finally {
+                    setCreatingCourse(false);
+                }
+            };
+
             const handleGenerateCodes = async () => {
                 if (!isAdmin) { alert("هذه العملية للمدير فقط."); return; }
                 const newBatch = [];
@@ -825,6 +868,9 @@
 
                                     {/* تبويبات الإدارة */}
                                     <div className="flex flex-wrap gap-2 mb-8">
+                                        <button onClick={() => setAdminTab("newcourse")} className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "newcourse" ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
+                                            ➕ إنشاء كورس جديد
+                                        </button>
                                         <button onClick={() => setAdminTab("lessons")} className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${adminTab === "lessons" ? "bg-cyan-500 text-slate-950" : "bg-slate-800 text-slate-300"}`}>
                                             🎬 إضافة حصة جديدة (شاملة الثامنيل والسعر والاختبار)
                                         </button>
@@ -835,6 +881,66 @@
                                             📚 إدارة الكورسات والأسعار
                                         </button>
                                     </div>
+
+                                    {/* 0. إنشاء كورس جديد */}
+                                    {adminTab === "newcourse" && (
+                                        <form onSubmit={handleCreateCourse} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-7 space-y-6">
+                                            <div className="border-b border-slate-800 pb-3">
+                                                <h3 className="text-lg font-black text-cyan-400 flex items-center gap-2">
+                                                    <span>➕</span><span>إنشاء كورس جديد</span>
+                                                </h3>
+                                                <p className="text-xs text-slate-400">يُحفظ الكورس سحابياً ويظهر للطلاب فوراً تحت مرحلته، وبعدها تقدر تضيف له حصص وتولّد له أكواد.</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">1. اسم الكورس (إجباري):</label>
+                                                    <input type="text" value={courseDraft.title} onChange={e => setCourseDraft({ ...courseDraft, title: e.target.value })} placeholder="مثال: منهج البرمجة - الصف الثالث الثانوي" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">2. المرحلة الدراسية:</label>
+                                                    <select value={courseDraft.stage} onChange={e => setCourseDraft({ ...courseDraft, stage: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                                        <option value="">— اختر المرحلة —</option>
+                                                        {courseStageOptions.map(st => <option key={st} value={st}>{st}</option>)}
+                                                        <option value="__custom__">➕ مرحلة جديدة...</option>
+                                                    </select>
+                                                    {courseDraft.stage === "__custom__" && (
+                                                        <input type="text" value={courseDraft.customStage} onChange={e => setCourseDraft({ ...courseDraft, customStage: e.target.value })} placeholder="اكتب اسم المرحلة الجديدة" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 mt-2" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">3. سعر الكورس (ج.م):</label>
+                                                    <input type="number" min="0" step="1" value={courseDraft.price} onChange={e => setCourseDraft({ ...courseDraft, price: e.target.value })} placeholder="مثال: 150" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">4. رابط صورة الغلاف:</label>
+                                                    <input type="url" dir="ltr" value={courseDraft.thumbnail} onChange={e => setCourseDraft({ ...courseDraft, thumbnail: e.target.value })} placeholder="https://..." className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">5. الشارة التعريفية:</label>
+                                                    <select value={courseDraft.badge} onChange={e => setCourseDraft({ ...courseDraft, badge: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                                        <option value="">بدون شارة</option>
+                                                        <option value="جديد ✨">جديد ✨</option>
+                                                        <option value="الأكثر مبيعًا 🔥">الأكثر مبيعًا 🔥</option>
+                                                        <option value="مميز ⭐">مميز ⭐</option>
+                                                        <option value="عرض خاص 🎁">عرض خاص 🎁</option>
+                                                    </select>
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">6. وصف الكورس:</label>
+                                                    <textarea rows="3" value={courseDraft.description} onChange={e => setCourseDraft({ ...courseDraft, description: e.target.value })} placeholder="اكتب وصفًا مختصرًا يظهر للطلاب..." className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"></textarea>
+                                                </div>
+                                                {/^https?:\/\//i.test(courseDraft.thumbnail.trim()) && (
+                                                    <div className="sm:col-span-2">
+                                                        <p className="text-xs text-slate-400 mb-1.5 font-bold">معاينة الغلاف:</p>
+                                                        <img src={courseDraft.thumbnail.trim()} alt="معاينة الغلاف" onError={e => { e.currentTarget.style.display = "none"; }} onLoad={e => { e.currentTarget.style.display = "block"; }} className="w-full max-w-xs h-40 object-cover rounded-2xl border border-slate-700" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button type="submit" disabled={creatingCourse} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-slate-950 font-black py-3.5 rounded-2xl text-base shadow-xl shadow-cyan-500/20 flex items-center justify-center gap-2">
+                                                <span>{creatingCourse ? "⏳" : "🚀"}</span><span>{creatingCourse ? "جاري الحفظ..." : "إنشاء الكورس وحفظه سحابياً"}</span>
+                                            </button>
+                                        </form>
+                                    )}
 
                                     {/* 1. نموذج إضافة حصة شاملة */}
                                     {adminTab === "lessons" && (
@@ -1317,7 +1423,7 @@
                                             <p className="text-sm text-slate-400">شاهد الحصة الأولى من أي كورس مجاناً قبل الاشتراك</p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
-                                            {["الكل", "الصف الأول الثانوي", "الصف الثاني الثانوي - بكالوريا", "تأسيس البرمجة"].map(stage => (
+                                            {[...new Set(["الكل", "الصف الأول الثانوي", "الصف الثاني الثانوي - بكالوريا", "تأسيس البرمجة", ...courses.map(c => c.stage).filter(Boolean)])].map(stage => (
                                                 <button key={stage} onClick={() => setSelectedStage(stage)} className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${selectedStage === stage ? "bg-cyan-500 text-slate-950" : "bg-cardBg text-slate-300 border border-slate-800"}`}>
                                                     {stage}
                                                 </button>
