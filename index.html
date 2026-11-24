@@ -159,7 +159,7 @@
   );
 
   function Stats({ courseCount }) {
-    const items = [{ v: "115,759 ", l: "views على قناة YouTube" }, { v: String(courseCount == null ? 0 : courseCount), l: "كورسات متاحة حاليًا" }];
+    const items = [{ v: "115,759", l: "views على قناة YouTube" }, { v: String(courseCount == null ? 0 : courseCount), l: "كورسات متاحة حاليًا" }];
     return (
       <section className="amc-sec max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-2 gap-2 sm:gap-4 max-w-md mx-auto">
@@ -292,7 +292,8 @@
     const q = [
       ["ما نظام الشرح في المنصة؟", "النظام بيشمل الشرح والحل وكتاب المدرسة وكتاب التقييمات، مع المراجعات الشهرية والنهائية لأولى ثانوي وتانية بكالوريا."],
       ["كيف يمكنني الاشتراك؟", "اضغط «الدخول للكورس». لو الكورس مجاني هيفتح مباشرة، ولو مدفوع هتظهر لك بيانات الدفع بفودافون كاش وخانة إدخال كود التفعيل."],
-      ["كيف أشاهد الحصص؟", "افتح الكورس من صفحة الكورسات. الحصة الأولى مجانية، وباقي الحصص بتتفتح بعد إدخال كود التفعيل."]
+      ["كيف أشاهد الحصص؟", "افتح الكورس من صفحة الكورسات. الحصة الأولى مجانية، وباقي الحصص بتتفتح بعد إدخال كود التفعيل."],
+      ["إزاي أسأل عن حاجة مش فاهمها في المنهج؟", "المهندس منصور بيرد عليك بنفسه، وبيجاوبك على أي سؤال أو نقطة واقفة معاك في المنهج عن طريق الواتساب."]
     ];
     return (
       <Sec id="faq" title="الأسئلة الشائعة">
@@ -461,6 +462,108 @@
             const [courseTitleDrafts, setCourseTitleDrafts] = useState({});
             const [courseOfferDrafts, setCourseOfferDrafts] = useState({});
             const [lessonPriceDrafts, setLessonPriceDrafts] = useState({});
+            const [newOfferDrafts, setNewOfferDrafts] = useState({});
+            const [editingOfferIds, setEditingOfferIds] = useState({});
+            const [savingOfferCourseId, setSavingOfferCourseId] = useState(null);
+
+            // يعيد العرض الساري حاليًا للكورس، دون تغيير السعر الأساسي المخزن.
+            const getActiveCourseOffer = (course) => {
+                const now = new Date();
+                const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                const offers = Array.isArray(course?.offers) ? course.offers : [];
+                const validOffers = offers.filter(offer =>
+                    offer && offer.enabled === true &&
+                    typeof offer.startDate === "string" && typeof offer.endDate === "string" &&
+                    today >= offer.startDate && today <= offer.endDate &&
+                    Number.isFinite(Number(offer.salePrice)) &&
+                    Number(offer.salePrice) >= 0 && Number(offer.salePrice) < Number(course.price)
+                );
+                return validOffers.length ? validOffers[validOffers.length - 1] : null;
+            };
+
+            const getCoursePriceInfo = (course) => {
+                const offer = getActiveCourseOffer(course);
+                return { offer, price: offer ? Number(offer.salePrice) : Number(course.price || 0) };
+            };
+
+            const saveCourseWithOffers = async (updatedCourse) => {
+                if (!window.firebaseModules || !isAdmin) throw new Error("Firebase غير متاح أو لا توجد صلاحية مدير.");
+                await saveCourseSecure(updatedCourse);
+                setCourses(prev => prev.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+            };
+
+            const handleEditCourseOffer = (course, offer) => {
+                setNewOfferDrafts(prev => ({ ...prev, [course.id]: {
+                    title: offer.title || "", description: offer.description || "",
+                    salePrice: String(offer.salePrice ?? ""), startDate: offer.startDate || "", endDate: offer.endDate || ""
+                }}));
+                setEditingOfferIds(prev => ({ ...prev, [course.id]: offer.id }));
+            };
+
+            const handleCancelEditCourseOffer = (courseId) => {
+                setEditingOfferIds(prev => ({ ...prev, [courseId]: null }));
+                setNewOfferDrafts(prev => ({ ...prev, [courseId]: { title: "", description: "", salePrice: "", startDate: "", endDate: "" } }));
+            };
+
+            const handleCreateCourseOffer = async (course) => {
+                const draft = newOfferDrafts[course.id] || {};
+                const title = String(draft.title || "").trim();
+                const description = String(draft.description || "").trim();
+                const salePriceRaw = String(draft.salePrice ?? "").trim();
+                const salePrice = Number(salePriceRaw);
+                const startDate = String(draft.startDate || "").trim();
+                const endDate = String(draft.endDate || "").trim();
+                if (!title) { alert("اكتب اسم العرض."); return; }
+                if (salePriceRaw === "" || !Number.isFinite(salePrice) || salePrice < 0 || salePrice >= Number(course.price)) {
+                    alert("سعر العرض لازم يكون رقمًا صحيحًا وأقل من السعر الأساسي للكورس."); return;
+                }
+                if (!startDate || !endDate || startDate > endDate) { alert("حدد تاريخ بداية ونهاية صحيحين للعرض."); return; }
+                const editingId = editingOfferIds[course.id];
+                const existingOffers = Array.isArray(course.offers) ? course.offers : [];
+                const offer = editingId
+                    ? { ...existingOffers.find(item => item.id === editingId), title, description, salePrice, startDate, endDate }
+                    : { id: (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `offer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, title, description, salePrice, startDate, endDate, enabled: true, createdAt: new Date().toISOString() };
+                const updatedOffers = editingId
+                    ? existingOffers.map(item => item.id === editingId ? offer : item)
+                    : [...existingOffers, offer];
+                const updatedCourse = { ...course, offers: updatedOffers };
+                setSavingOfferCourseId(course.id);
+                try {
+                    await saveCourseWithOffers(updatedCourse);
+                    setNewOfferDrafts(prev => ({ ...prev, [course.id]: { title: "", description: "", salePrice: "", startDate: "", endDate: "" } }));
+                    setEditingOfferIds(prev => ({ ...prev, [course.id]: null }));
+                    alert(editingId ? "تم تحديث العرض بنجاح." : "تم إنشاء العرض وحفظه. سيظهر للطلاب خلال الفترة المحددة.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ العرض على Firebase. لم يتم تأكيد الحفظ.");
+                } finally {
+                    setSavingOfferCourseId(null);
+                }
+            };
+
+            const handleToggleCourseOffer = async (course, offerId) => {
+                const offers = (Array.isArray(course.offers) ? course.offers : []).map(offer =>
+                    offer.id === offerId ? { ...offer, enabled: !offer.enabled } : offer
+                );
+                try {
+                    await saveCourseWithOffers({ ...course, offers });
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر تحديث حالة العرض على Firebase.");
+                }
+            };
+
+            const handleDeleteCourseOffer = async (course, offerId) => {
+                if (!confirm("هل أنت متأكد من حذف هذا العرض؟ لن يؤثر ذلك على اشتراكات الطلاب أو أكواد التفعيل.")) return;
+                const offers = (Array.isArray(course.offers) ? course.offers : []).filter(offer => offer.id !== offerId);
+                try {
+                    await saveCourseWithOffers({ ...course, offers });
+                    alert("تم حذف العرض.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حذف العرض من Firebase.");
+                }
+            };
 
             const handleSaveCourseOffer = async (course) => {
                 const draft = courseOfferDrafts[course.id] || {};
@@ -1422,30 +1525,83 @@
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl p-3">
-                                                        <label className="text-xs text-slate-300 space-y-1">
-                                                            <span className="block font-bold">الشارة الظاهرة على الكورس</span>
-                                                            <input
-                                                                type="text"
-                                                                value={courseOfferDrafts[course.id]?.badge ?? course.badge ?? ""}
-                                                                onChange={e => setCourseOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), badge: e.target.value } }))}
-                                                                placeholder="مثال: عرض خاص 🎁 / جديد / خصم 20%"
-                                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
-                                                            />
-                                                        </label>
-                                                        <label className="text-xs text-slate-300 space-y-1">
-                                                            <span className="block font-bold">تفاصيل العرض أو أي عبارة تريدها</span>
-                                                            <input
-                                                                type="text"
-                                                                value={courseOfferDrafts[course.id]?.offerText ?? course.offerText ?? ""}
-                                                                onChange={e => setCourseOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), offerText: e.target.value } }))}
-                                                                placeholder="مثال: خصم لفترة محدودة — العرض ينتهي الخميس"
-                                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
-                                                            />
-                                                        </label>
-                                                        <button type="button" onClick={() => handleSaveCourseOffer(course)} className="md:col-span-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg py-2">
-                                                            حفظ الشارة والعرض الخاص ✨
-                                                        </button>
+                                                    <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 space-y-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+                                                            <label className="text-xs text-slate-300 space-y-1">
+                                                                <span className="block font-bold">الشارة الظاهرة على الكورس (اختياري)</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={courseOfferDrafts[course.id]?.badge ?? course.badge ?? ""}
+                                                                    onChange={e => setCourseOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), badge: e.target.value } }))}
+                                                                    placeholder="مثال: جديد / الأكثر طلبًا"
+                                                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                                                                />
+                                                            </label>
+                                                            <button type="button" onClick={() => handleSaveCourseOffer(course)} className="bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg px-4 py-2 text-xs">
+                                                                حفظ الشارة
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="border-t border-slate-700 pt-4 space-y-3">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <h5 className="font-black text-amber-300">🎁 إدارة عروض هذا الكورس {editingOfferIds[course.id] ? "— تعديل عرض" : ""}</h5>
+                                                                <span className="text-[11px] text-slate-400">السعر الأساسي: {course.price} ج.م</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                <label className="text-xs text-slate-300 space-y-1">
+                                                                    <span className="block font-bold">اسم العرض</span>
+                                                                    <input type="text" value={newOfferDrafts[course.id]?.title || ""} onChange={e => setNewOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), title: e.target.value } }))} placeholder="مثال: عرض بداية الترم" className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                                                </label>
+                                                                <label className="text-xs text-slate-300 space-y-1">
+                                                                    <span className="block font-bold">سعر العرض بعد الخصم (جنيه)</span>
+                                                                    <input type="number" min="0" step="1" value={newOfferDrafts[course.id]?.salePrice ?? ""} onChange={e => setNewOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), salePrice: e.target.value } }))} placeholder="مثال: 150" className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                                                </label>
+                                                                <label className="text-xs text-slate-300 space-y-1 md:col-span-2">
+                                                                    <span className="block font-bold">تفاصيل العرض</span>
+                                                                    <textarea rows="2" value={newOfferDrafts[course.id]?.description || ""} onChange={e => setNewOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), description: e.target.value } }))} placeholder="اكتب تفاصيل العرض وما الذي سيحصل عليه الطالب" className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white resize-y" />
+                                                                </label>
+                                                                <label className="text-xs text-slate-300 space-y-1">
+                                                                    <span className="block font-bold">تاريخ بداية العرض</span>
+                                                                    <input type="date" value={newOfferDrafts[course.id]?.startDate || ""} onChange={e => setNewOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), startDate: e.target.value } }))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                                                </label>
+                                                                <label className="text-xs text-slate-300 space-y-1">
+                                                                    <span className="block font-bold">تاريخ نهاية العرض</span>
+                                                                    <input type="date" value={newOfferDrafts[course.id]?.endDate || ""} onChange={e => setNewOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), endDate: e.target.value } }))} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white" />
+                                                                </label>
+                                                            </div>
+                                                            <button type="button" disabled={savingOfferCourseId === course.id} onClick={() => handleCreateCourseOffer(course)} className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black rounded-lg py-2.5">
+                                                                {savingOfferCourseId === course.id ? "جاري الحفظ..." : editingOfferIds[course.id] ? "حفظ تعديلات العرض" : "➕ إنشاء العرض وحفظه"}
+                                                            </button>
+                                                            {editingOfferIds[course.id] && <button type="button" onClick={() => handleCancelEditCourseOffer(course.id)} className="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg py-2 text-xs">إلغاء التعديل</button>}
+
+                                                            <div className="space-y-2">
+                                                                {(Array.isArray(course.offers) ? course.offers : []).length === 0 ? (
+                                                                    <p className="text-xs text-slate-500 text-center py-2">لا توجد عروض مسجلة لهذا الكورس حتى الآن.</p>
+                                                                ) : (course.offers || []).map(offer => {
+                                                                    const current = getActiveCourseOffer(course)?.id === offer.id;
+                                                                    return (
+                                                                        <div key={offer.id} className="bg-slate-900/80 border border-slate-700 rounded-lg p-3 space-y-2">
+                                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                <strong className="text-sm text-white">{offer.title}</strong>
+                                                                                <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${current ? "bg-emerald-500/20 text-emerald-300" : offer.enabled ? "bg-amber-500/20 text-amber-300" : "bg-slate-700 text-slate-300"}`}>
+                                                                                    {current ? "نشط للطلاب الآن" : offer.enabled ? "مفعّل / خارج الفترة" : "متوقف"}
+                                                                                </span>
+                                                                            </div>
+                                                                            <p className="text-xs text-slate-400">{offer.description || "بدون تفاصيل إضافية"}</p>
+                                                                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                                                <span><span className="line-through text-slate-500">{course.price} ج.م</span> <strong className="text-emerald-300">{offer.salePrice} ج.م</strong></span>
+                                                                                <span className="text-slate-400">من {offer.startDate} إلى {offer.endDate}</span>
+                                                                            </div>
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                <button type="button" onClick={() => handleEditCourseOffer(course, offer)} className="bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 rounded-lg px-3 py-1.5 text-[11px] font-bold">تعديل العرض</button>
+                                                                                <button type="button" onClick={() => handleToggleCourseOffer(course, offer.id)} className="bg-slate-700 hover:bg-slate-600 text-white rounded-lg px-3 py-1.5 text-[11px] font-bold">{offer.enabled ? "إيقاف العرض" : "تفعيل العرض"}</button>
+                                                                                <button type="button" onClick={() => handleDeleteCourseOffer(course, offer.id)} className="bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 rounded-lg px-3 py-1.5 text-[11px] font-bold">حذف العرض</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                     {/* قائمة الحصص بداخل الكورس مع إمكانية تعديل سعر كل حصة */}
@@ -1565,11 +1721,11 @@
                                                 <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-4xl mx-auto">🔒</div>
                                                 <h3 className="text-2xl font-black text-white">هذه الحصة للمشتركين فقط</h3>
                                                 <p className="text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-                                                    سعر الكورس كاملًا <strong>{activeCourse.price} ج.م</strong>، وسعر الحصة الحالية منفردة <strong>{activeLesson?.isFree ? "مجانية" : `${activeLesson?.price ?? 0} ج.م`}</strong>. {activeCourse.offerText || ""}
+                                                    سعر الكورس كاملًا <strong>{getCoursePriceInfo(activeCourse).price} ج.م</strong>، وسعر الحصة الحالية منفردة <strong>{activeLesson?.isFree ? "مجانية" : `${activeLesson?.price ?? 0} ج.م`}</strong>. {activeCourse.offerText || ""}
                                                 </p>
                                                 <div className="flex flex-wrap items-center justify-center gap-3">
-                                                    <button onClick={() => { setTargetItemForCode(activeCourse); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black px-6 py-3 rounded-2xl text-sm shadow-xl shadow-cyan-500/20 transition">
-                                                        🛒 شراء الكورس كاملًا ({activeCourse.price} ج.م)
+                                                    <button onClick={() => { const priceInfo = getCoursePriceInfo(activeCourse); setTargetItemForCode({ ...activeCourse, price: priceInfo.price, originalPrice: activeCourse.price, appliedOffer: priceInfo.offer }); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black px-6 py-3 rounded-2xl text-sm shadow-xl shadow-cyan-500/20 transition">
+                                                        🛒 شراء الكورس كاملًا ({getCoursePriceInfo(activeCourse).price} ج.م)
                                                     </button>
                                                     {activeLesson && (
                                                         <button onClick={() => { setTargetItemForCode(activeLesson); setShowPaymentModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded-2xl text-sm border border-slate-700 transition">
@@ -1587,8 +1743,8 @@
                                             <div>
                                                 <h3 className="font-black text-lg text-white">محتوى الكورس</h3>
                                                 <p className="text-xs text-slate-400">{activeCourse.lessons.length} حصص مسجلة بجودة عالية</p>
-                                                <p className="text-sm text-emerald-300 font-black mt-2">سعر الكورس كاملًا: {activeCourse.price} ج.م</p>
-                                                {activeCourse.offerText && <p className="text-xs text-amber-300 mt-1">🎁 {activeCourse.offerText}</p>}
+                                                <p className="text-sm text-emerald-300 font-black mt-2">سعر الكورس كاملًا: {getCoursePriceInfo(activeCourse).price} ج.م</p>
+                                                {getActiveCourseOffer(activeCourse) ? <p className="text-xs text-amber-300 mt-1">🎁 {getActiveCourseOffer(activeCourse).title} — {getActiveCourseOffer(activeCourse).description}</p> : activeCourse.offerText && <p className="text-xs text-amber-300 mt-1">🎁 {activeCourse.offerText}</p>}
                                             </div>
                                         </div>
                                         <div className="space-y-2.5">
@@ -1683,18 +1839,22 @@
                                                                 {course.badge}
                                                             </div>
                                                             <div className="absolute bottom-3 left-3 bg-slate-950/90 text-white text-xs font-black px-3 py-1.5 rounded-xl border border-slate-700">
-                                                                الكورس كامل: {course.price} ج.م
+                                                                {getActiveCourseOffer(course) ? <><span className="line-through text-slate-400 ml-1">{course.price}</span><span className="text-emerald-300">{getCoursePriceInfo(course).price} ج.م</span></> : <>الكورس كامل: {course.price} ج.م</>}
                                                             </div>
                                                         </div>
                                                         <div className="p-6 space-y-3">
                                                             <span className="text-xs font-bold text-purple-400">{course.stage}</span>
                                                             <h4 className="text-lg font-black text-white leading-snug">{course.title}</h4>
                                                             <p className="text-xs text-slate-400 leading-relaxed">{course.description}</p>
-                                                            {course.offerText && (
-                                                                <div className="bg-amber-500/10 border border-amber-400/30 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold">
-                                                                    🎁 {course.offerText}
+                                                            {getActiveCourseOffer(course) ? (
+                                                                <div className="bg-amber-500/10 border border-amber-400/30 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold space-y-1">
+                                                                    <div>🎁 {getActiveCourseOffer(course).title}</div>
+                                                                    {getActiveCourseOffer(course).description && <div className="font-normal">{getActiveCourseOffer(course).description}</div>}
+                                                                    <div className="text-emerald-300">السعر بعد العرض: {getCoursePriceInfo(course).price} ج.م بدلًا من {course.price} ج.م</div>
                                                                 </div>
-                                                            )}
+                                                            ) : course.offerText ? (
+                                                                <div className="bg-amber-500/10 border border-amber-400/30 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold">🎁 {course.offerText}</div>
+                                                            ) : null}
                                                         </div>
                                                     </div>
 
