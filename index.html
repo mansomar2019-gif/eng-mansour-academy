@@ -291,7 +291,7 @@
     const [i, setI] = useState(0);
     const q = [
       ["ما نظام الشرح في المنصة؟", "النظام بيشمل الشرح والحل وكتاب المدرسة وكتاب التقييمات، مع المراجعات الشهرية والنهائية لأولى ثانوي وتانية بكالوريا."],
-      ["كيف يمكنني الاشتراك؟", "اختار الكورس أو الحصة، واضغط «تفعيل الكود»، وتواصل معانا على واتساب عشان تاخد كود التفعيل."],
+      ["كيف يمكنني الاشتراك؟", "اضغط «الدخول للكورس». لو الكورس مجاني هيفتح مباشرة، ولو مدفوع هتظهر لك بيانات الدفع بفودافون كاش وخانة إدخال كود التفعيل."],
       ["كيف أشاهد الحصص؟", "افتح الكورس من صفحة الكورسات. الحصة الأولى مجانية، وباقي الحصص بتتفتح بعد إدخال كود التفعيل."]
     ];
     return (
@@ -454,9 +454,107 @@
             const [isFirebaseSyncing, setIsFirebaseSyncing] = useState(false);
 
             // إنشاء كورس جديد من لوحة الإدارة
-            const EMPTY_NEW_COURSE = { title: "", stage: "", customStage: "", price: "", thumbnail: "", description: "", badge: "" };
+            const EMPTY_NEW_COURSE = { title: "", stage: "", customStage: "", price: "", thumbnail: "", description: "", badge: "", offerText: "" };
             const [courseDraft, setCourseDraft] = useState(EMPTY_NEW_COURSE);
             const [creatingCourse, setCreatingCourse] = useState(false);
+            const [coursePriceDrafts, setCoursePriceDrafts] = useState({});
+            const [courseTitleDrafts, setCourseTitleDrafts] = useState({});
+            const [courseOfferDrafts, setCourseOfferDrafts] = useState({});
+            const [lessonPriceDrafts, setLessonPriceDrafts] = useState({});
+
+            const handleSaveCourseOffer = async (course) => {
+                const draft = courseOfferDrafts[course.id] || {};
+                const updatedCourse = {
+                    ...course,
+                    badge: draft.badge !== undefined ? draft.badge.trim() : (course.badge || ""),
+                    offerText: draft.offerText !== undefined ? draft.offerText.trim() : (course.offerText || "")
+                };
+                setCourses(prev => prev.map(c => c.id === course.id ? updatedCourse : c));
+                try {
+                    if (window.firebaseModules && isAdmin) await saveCourseSecure(updatedCourse);
+                    alert("تم حفظ الشارة والعرض الخاص.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ العرض على Firebase.");
+                }
+            };
+
+            const handleSaveLessonPrice = async (course, lesson) => {
+                const key = `${course.id}_${lesson.id}`;
+                const raw = String(lessonPriceDrafts[key] ?? lesson.price ?? 0).trim();
+                const price = Number(raw);
+                if (raw === "" || !Number.isFinite(price) || price < 0) {
+                    alert("اكتب سعرًا صحيحًا للحصة.");
+                    return;
+                }
+                const updatedCourse = {
+                    ...course,
+                    lessons: course.lessons.map(l => l.id === lesson.id ? { ...l, price } : l)
+                };
+                setCourses(prev => prev.map(c => c.id === course.id ? updatedCourse : c));
+                try {
+                    if (window.firebaseModules && isAdmin) await saveCourseSecure(updatedCourse);
+                    setLessonPriceDrafts(prev => ({ ...prev, [key]: String(price) }));
+                    alert("تم حفظ سعر الحصة.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ سعر الحصة على Firebase.");
+                }
+            };
+
+            const handleSaveCourseTitle = async (course) => {
+                const title = String(courseTitleDrafts[course.id] ?? course.title ?? "").trim();
+                if (!title) {
+                    alert("اكتب عنوانًا للكورس قبل الحفظ.");
+                    return;
+                }
+                const updatedCourse = { ...course, title };
+                setCourses(prev => prev.map(c => c.id === course.id ? updatedCourse : c));
+                try {
+                    if (window.firebaseModules && isAdmin) await saveCourseSecure(updatedCourse);
+                    setCourseTitleDrafts(prev => ({ ...prev, [course.id]: title }));
+                    alert("تم تحديث عنوان الكورس بنجاح.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ عنوان الكورس على Firebase. حاول مرة أخرى.");
+                }
+            };
+
+            const handleSaveCoursePrice = async (course) => {
+                const raw = String(coursePriceDrafts[course.id] ?? course.price ?? "").trim();
+                const price = Number(raw);
+                if (raw === "" || !Number.isFinite(price) || price < 0) {
+                    alert("اكتب سعرًا صحيحًا (رقم أكبر من أو يساوي صفر).");
+                    return;
+                }
+                const updatedCourse = { ...course, price };
+                const updatedCourses = courses.map(c => c.id === course.id ? updatedCourse : c);
+                setCourses(updatedCourses);
+                try {
+                    if (window.firebaseModules && isAdmin) await saveCourseSecure(updatedCourse);
+                    setCoursePriceDrafts(prev => ({ ...prev, [course.id]: String(price) }));
+                    alert("تم تحديث سعر الكورس بنجاح.");
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ السعر على السحابة. حاول مرة أخرى.");
+                }
+            };
+
+            const handleReorderLesson = async (course, lessonIndex, direction) => {
+                const targetIndex = lessonIndex + direction;
+                if (targetIndex < 0 || targetIndex >= course.lessons.length) return;
+                const reorderedLessons = [...course.lessons];
+                [reorderedLessons[lessonIndex], reorderedLessons[targetIndex]] =
+                    [reorderedLessons[targetIndex], reorderedLessons[lessonIndex]];
+                const updatedCourse = { ...course, lessons: reorderedLessons };
+                setCourses(prev => prev.map(c => c.id === course.id ? updatedCourse : c));
+                try {
+                    if (window.firebaseModules && isAdmin) await saveCourseSecure(updatedCourse);
+                } catch (error) {
+                    console.error(error);
+                    alert("تعذر حفظ ترتيب الحصص على السحابة. حدّث الصفحة وحاول مرة أخرى.");
+                }
+            };
 
             // حالة مستخدم جوجل الحالي
             const [user, setUser] = useState(null);
@@ -719,7 +817,7 @@
                     const { getFirestore, doc, collection, initializeApp } = window.firebaseModules;
                     const db = getFirestore(initializeApp(firebaseConfig));
                     const id = doc(collection(db, "courses")).id;
-                    const created = { id, title, stage, price, thumbnail: thumb || fallbackThumb, badge: courseDraft.badge, description: courseDraft.description.trim(), lessons: [] };
+                    const created = { id, title, stage, price, thumbnail: thumb || fallbackThumb, badge: courseDraft.badge, offerText: (courseDraft.offerText || "").trim(), description: courseDraft.description.trim(), lessons: [] };
                     await saveCourseSecure(created);
                     setCourses(prev => prev.some(c => c.id === id) ? prev : [...prev, created]);
                     setCourseDraft(EMPTY_NEW_COURSE);
@@ -974,14 +1072,16 @@
                                                     <input type="url" dir="ltr" value={courseDraft.thumbnail} onChange={e => setCourseDraft({ ...courseDraft, thumbnail: e.target.value })} placeholder="https://..." className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">5. الشارة التعريفية:</label>
-                                                    <select value={courseDraft.badge} onChange={e => setCourseDraft({ ...courseDraft, badge: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-                                                        <option value="">بدون شارة</option>
-                                                        <option value="جديد ✨">جديد ✨</option>
-                                                        <option value="الأكثر مبيعًا 🔥">الأكثر مبيعًا 🔥</option>
-                                                        <option value="مميز ⭐">مميز ⭐</option>
-                                                        <option value="عرض خاص 🎁">عرض خاص 🎁</option>
-                                                    </select>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">5. الشارة التعريفية (اكتب أي نص تريده):</label>
+                                                    <input type="text" value={courseDraft.badge} onChange={e => setCourseDraft({ ...courseDraft, badge: e.target.value })} placeholder="مثال: عرض خاص 🎁 أو الأكثر طلبًا 🔥" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">نص الشارة (يمكنك كتابة أي كلمة):</label>
+                                                    <input type="text" value={courseDraft.badge} onChange={e => setCourseDraft({ ...courseDraft, badge: e.target.value })} placeholder="مثال: عرض خاص 🔥 أو خصم لفترة محدودة" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <label className="block text-xs text-slate-400 mb-1.5 font-bold">رسالة العرض / تفاصيل الخصم (اختياري):</label>
+                                                    <input type="text" value={courseDraft.offerText} onChange={e => setCourseDraft({ ...courseDraft, offerText: e.target.value })} placeholder="مثال: خصم 30% حتى نهاية الأسبوع — اتركه فارغًا لو مش محتاج عرض" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
                                                 </div>
                                                 <div className="sm:col-span-2">
                                                     <label className="block text-xs text-slate-400 mb-1.5 font-bold">6. وصف الكورس:</label>
@@ -1255,28 +1355,45 @@
                                                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
                                                         <div className="flex items-center gap-3">
                                                             <img src={course.thumbnail} alt="" className="w-16 h-12 object-cover rounded-xl border border-slate-700" />
-                                                            <div>
+                                                            <div className="min-w-0 flex-1 space-y-2">
                                                                 <h4 className="font-black text-white text-base">{course.title}</h4>
                                                                 <p className="text-xs text-slate-400">{course.stage} • السعر: <span className="text-cyan-400 font-bold">{course.price} ج.م</span></p>
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={courseTitleDrafts[course.id] ?? course.title ?? ""}
+                                                                        onChange={e => setCourseTitleDrafts(prev => ({ ...prev, [course.id]: e.target.value }))}
+                                                                        placeholder="اكتب عنوان الكورس الجديد"
+                                                                        aria-label="عنوان الكورس"
+                                                                        className="min-w-[220px] flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleSaveCourseTitle(course)}
+                                                                        className="bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-2 rounded-xl text-slate-950 font-black"
+                                                                    >
+                                                                        حفظ العنوان ✏️
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <label className="flex items-center gap-2 text-xs text-slate-300">
+                                                                <span>السعر بالجنيه</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    step="1"
+                                                                    value={coursePriceDrafts[course.id] ?? String(course.price ?? 0)}
+                                                                    onChange={e => setCoursePriceDrafts(prev => ({ ...prev, [course.id]: e.target.value }))}
+                                                                    className="w-24 bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-white text-center"
+                                                                />
+                                                            </label>
                                                             <button
-                                                                onClick={() => {
-                                                                    const p = prompt("أدخل السعر الجديد للكورس بالجنيه:", course.price);
-                                                                    if (p !== null) {
-                                                                        const updated = courses.map(c => c.id === course.id ? { ...c, price: Number(p) } : c);
-                                                                        setCourses(updated);
-                                                                        if (window.firebaseModules) {
-                                                                            const { getFirestore, doc, updateDoc, initializeApp } = window.firebaseModules;
-                                                                            const db = getFirestore(initializeApp(firebaseConfig));
-                                                                            updateDoc(doc(db, "courses", course.id), { price: Number(p) });
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-xl text-white font-bold"
+                                                                onClick={() => handleSaveCoursePrice(course)}
+                                                                className="bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-2 rounded-xl text-slate-950 font-black"
                                                             >
-                                                                تعديل السعر 💰
+                                                                حفظ السعر 💰
                                                             </button>
                                                             <button
                                                                 onClick={() => {
@@ -1298,7 +1415,33 @@
                                                         </div>
                                                     </div>
 
-                                                    {/* قائمة الحصص بداخل الكورس مع إمكانية حذف أي حصة */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-800/40 border border-slate-700/50 rounded-xl p-3">
+                                                        <label className="text-xs text-slate-300 space-y-1">
+                                                            <span className="block font-bold">الشارة الظاهرة على الكورس</span>
+                                                            <input
+                                                                type="text"
+                                                                value={courseOfferDrafts[course.id]?.badge ?? course.badge ?? ""}
+                                                                onChange={e => setCourseOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), badge: e.target.value } }))}
+                                                                placeholder="مثال: عرض خاص 🎁 / جديد / خصم 20%"
+                                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                                                            />
+                                                        </label>
+                                                        <label className="text-xs text-slate-300 space-y-1">
+                                                            <span className="block font-bold">تفاصيل العرض أو أي عبارة تريدها</span>
+                                                            <input
+                                                                type="text"
+                                                                value={courseOfferDrafts[course.id]?.offerText ?? course.offerText ?? ""}
+                                                                onChange={e => setCourseOfferDrafts(prev => ({ ...prev, [course.id]: { ...(prev[course.id] || {}), offerText: e.target.value } }))}
+                                                                placeholder="مثال: خصم لفترة محدودة — العرض ينتهي الخميس"
+                                                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"
+                                                            />
+                                                        </label>
+                                                        <button type="button" onClick={() => handleSaveCourseOffer(course)} className="md:col-span-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-lg py-2">
+                                                            حفظ الشارة والعرض الخاص ✨
+                                                        </button>
+                                                    </div>
+
+                                                    {/* قائمة الحصص بداخل الكورس مع إمكانية تعديل سعر كل حصة */}
                                                     <div className="space-y-2">
                                                         <p className="text-xs text-slate-400 font-bold">الحصص المرفوعة داخل الكورس:</p>
                                                         {course.lessons.map((lesson, lIdx) => (
@@ -1309,13 +1452,40 @@
                                                                         <p className="font-bold text-white">{lIdx + 1}. {lesson.title}</p>
                                                                         <span className="text-[11px] text-slate-400">⏱️ {lesson.duration} • 💰 منفردة: {lesson.price} ج.م {lesson.isFree && "• (مجانية)"}</span>
                                                                     </div>
+                                                                    <div className="flex items-center gap-1 mt-1">
+                                                                        <span className="text-[10px] text-slate-400">سعر الحصة:</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            step="1"
+                                                                            value={lessonPriceDrafts[`${course.id}_${lesson.id}`] ?? String(lesson.price ?? 0)}
+                                                                            onChange={e => setLessonPriceDrafts(prev => ({ ...prev, [`${course.id}_${lesson.id}`]: e.target.value }))}
+                                                                            className="w-20 bg-slate-900 border border-slate-700 rounded-md px-2 py-1 text-white text-center"
+                                                                        />
+                                                                        <span className="text-[10px] text-slate-400">ج.م</span>
+                                                                        <button type="button" onClick={() => handleSaveLessonPrice(course, lesson)} className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-md px-2 py-1 text-[10px]">حفظ السعر</button>
+                                                                    </div>
                                                                 </div>
-                                                                <button
-                                                                    onClick={() => handleDeleteLesson(course.id, lesson.id)}
-                                                                    className="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-500/10 rounded-lg transition"
-                                                                >
-                                                                    حذف 🗑️
-                                                                </button>
+                                                                <div className="flex items-center gap-1 shrink-0">
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={lIdx === 0}
+                                                                        onClick={() => handleReorderLesson(course, lIdx, -1)}
+                                                                        title="تحريك الحصة لأعلى"
+                                                                        className="text-white disabled:opacity-30 bg-slate-700 hover:bg-slate-600 rounded-lg px-2 py-1 font-bold"
+                                                                    >↑</button>
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={lIdx === course.lessons.length - 1}
+                                                                        onClick={() => handleReorderLesson(course, lIdx, 1)}
+                                                                        title="تحريك الحصة لأسفل"
+                                                                        className="text-white disabled:opacity-30 bg-slate-700 hover:bg-slate-600 rounded-lg px-2 py-1 font-bold"
+                                                                    >↓</button>
+                                                                    <button
+                                                                        onClick={() => handleDeleteLesson(course.id, lesson.id)}
+                                                                        className="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-500/10 rounded-lg transition"
+                                                                    >حذف 🗑️</button>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1388,15 +1558,15 @@
                                                 <div className="w-20 h-20 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-4xl mx-auto">🔒</div>
                                                 <h3 className="text-2xl font-black text-white">هذه الحصة للمشتركين فقط</h3>
                                                 <p className="text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-                                                    يمكنك الاشتراك في الكورس كاملاً بسعر <strong>{activeCourse.price} ج.م</strong> أو فتح هذه الحصة منفردة بسعر <strong>{activeLesson?.price || 35} ج.م</strong>.
+                                                    سعر الكورس كاملًا <strong>{activeCourse.price} ج.م</strong>، وسعر الحصة الحالية منفردة <strong>{activeLesson?.isFree ? "مجانية" : `${activeLesson?.price ?? 0} ج.م`}</strong>. {activeCourse.offerText || ""}
                                                 </p>
                                                 <div className="flex flex-wrap items-center justify-center gap-3">
                                                     <button onClick={() => { setTargetItemForCode(activeCourse); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black px-6 py-3 rounded-2xl text-sm shadow-xl shadow-cyan-500/20 transition">
-                                                        🔑 تفعيل الكورس كاملاً ({activeCourse.price} ج.م)
+                                                        🛒 شراء الكورس كاملًا ({activeCourse.price} ج.م)
                                                     </button>
                                                     {activeLesson && (
                                                         <button onClick={() => { setTargetItemForCode(activeLesson); setShowPaymentModal(true); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded-2xl text-sm border border-slate-700 transition">
-                                                            🔑 تفعيل هذه الحصة فقط ({activeLesson.price} ج.م)
+                                                            🛒 شراء الحصة منفردة ({activeLesson.price} ج.م)
                                                         </button>
                                                     )}
                                                 </div>
@@ -1410,6 +1580,8 @@
                                             <div>
                                                 <h3 className="font-black text-lg text-white">محتوى الكورس</h3>
                                                 <p className="text-xs text-slate-400">{activeCourse.lessons.length} حصص مسجلة بجودة عالية</p>
+                                                <p className="text-sm text-emerald-300 font-black mt-2">سعر الكورس كاملًا: {activeCourse.price} ج.م</p>
+                                                {activeCourse.offerText && <p className="text-xs text-amber-300 mt-1">🎁 {activeCourse.offerText}</p>}
                                             </div>
                                         </div>
                                         <div className="space-y-2.5">
@@ -1428,7 +1600,7 @@
                                                             <img src={lesson.thumbnail || activeCourse.thumbnail} alt="" className="w-14 h-10 object-cover rounded-xl border border-slate-800 shrink-0" />
                                                             <div>
                                                                 <p className="text-sm font-bold leading-snug line-clamp-1">{index + 1}. {lesson.title}</p>
-                                                                <span className="text-[11px] text-slate-400">⏱️ {lesson.duration}</span>
+                                                                <span className="text-[11px] text-slate-400">⏱️ {lesson.duration} • 💰 الحصة: {lesson.isFree ? "مجانية" : `${lesson.price ?? 0} ج.م`}</span>
                                                             </div>
                                                         </div>
                                                         <div className="shrink-0">
@@ -1479,7 +1651,7 @@
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div>
                                             <h3 className="text-2xl font-black text-white">الكورسات المتاحة بالمنصة</h3>
-                                            <p className="text-sm text-slate-400">شاهد الحصة الأولى من أي كورس مجاناً قبل الاشتراك</p>
+                                            <p className="text-sm text-slate-400">اعرض محتوى كل كورس، وتعرّف على سعر كل حصة وسعر الكورس كاملًا قبل الاشتراك</p>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {[...new Set(["الكل", "الصف الأول الثانوي", "الصف الثاني الثانوي - بكالوريا", "تأسيس البرمجة", ...courses.map(c => c.stage).filter(Boolean)])].map(stage => (
@@ -1504,13 +1676,18 @@
                                                                 {course.badge}
                                                             </div>
                                                             <div className="absolute bottom-3 left-3 bg-slate-950/90 text-white text-xs font-black px-3 py-1.5 rounded-xl border border-slate-700">
-                                                                {course.price} ج.م
+                                                                الكورس كامل: {course.price} ج.م
                                                             </div>
                                                         </div>
                                                         <div className="p-6 space-y-3">
                                                             <span className="text-xs font-bold text-purple-400">{course.stage}</span>
                                                             <h4 className="text-lg font-black text-white leading-snug">{course.title}</h4>
                                                             <p className="text-xs text-slate-400 leading-relaxed">{course.description}</p>
+                                                            {course.offerText && (
+                                                                <div className="bg-amber-500/10 border border-amber-400/30 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold">
+                                                                    🎁 {course.offerText}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
 
@@ -1519,20 +1696,16 @@
                                                             <span>🎬 {course.lessons.length} حصص</span>
                                                             <span>📄 شاملة الملازم والـ PDF</span>
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-2.5">
-                                                            <button onClick={() => { setActiveCourse(course); setActiveLesson(course.lessons[0] || null); }} className="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm transition">
-                                                                ▶️ {unlocked ? "دخول الكورس" : "الحصة 1 مجاناً"}
-                                                            </button>
-                                                            {unlocked ? (
-                                                                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold py-2.5 px-3 rounded-xl text-xs sm:text-sm flex items-center justify-center">
-                                                                    مُفعّل لديك ✅
-                                                                </div>
-                                                            ) : (
-                                                                <button onClick={() => { setTargetItemForCode(course); setShowPaymentModal(true); }} className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs sm:text-sm transition">
-                                                                    🔑 تفعيل الكود
-                                                                </button>
-                                                            )}
-                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                setActiveCourse(course);
+                                                                setActiveLesson(course.lessons[0] || null);
+                                                                setQuizSelected(null);
+                                                            }}
+                                                            className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs sm:text-sm transition"
+                                                        >
+                                                            👁️ عرض الكورس والحصص والأسعار
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 </div></div></div>
@@ -1564,7 +1737,7 @@
                                     <p className="font-bold text-amber-400">📲 خطوات استلام الكود:</p>
                                     <ol className="list-decimal list-inside space-y-1.5 text-slate-300">
                                         <li>
-                                            حول المبلغ {targetItemForCode ? `(${targetItemForCode.price} ج.م)` : ""} فودافون كاش أو انستا باي على:{" "}
+                                            حوّل المبلغ {targetItemForCode ? `(${targetItemForCode.price} ج.م)` : ""} عبر فودافون كاش فقط على:{" "}
                                             <span className="font-mono font-bold text-cyan-400 select-all">{SITE_CONFIG.vodafoneCashNumber}</span>
                                         </li>
                                         <li>أرسل صورة التحويل على واتساب لاستلام الكود فوراً.</li>
