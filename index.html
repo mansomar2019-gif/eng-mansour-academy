@@ -487,9 +487,11 @@
                     alert("اكتب سعرًا صحيحًا للحصة.");
                     return;
                 }
+                // حالة الحصة تُشتق دائمًا من السعر: صفر = مجانية، وأي سعر أكبر من صفر = مدفوعة.
+                const isFree = price === 0;
                 const updatedCourse = {
                     ...course,
-                    lessons: course.lessons.map(l => l.id === lesson.id ? { ...l, price } : l)
+                    lessons: course.lessons.map(l => l.id === lesson.id ? { ...l, price, isFree } : l)
                 };
                 setCourses(prev => prev.map(c => c.id === course.id ? updatedCourse : c));
                 try {
@@ -874,6 +876,12 @@
                     alert("يرجى كتابة عنوان الحصة ورابط فيديو اليوتيوب");
                     return;
                 }
+                const lessonPriceRaw = String(newLesson.price).trim();
+                const lessonPrice = Number(lessonPriceRaw);
+                if (lessonPriceRaw === "" || !Number.isFinite(lessonPrice) || lessonPrice < 0) {
+                    alert("اكتب سعرًا صحيحًا للحصة (صفر أو أكثر).");
+                    return;
+                }
 
                 const extractedId = extractYouTubeId(newLesson.videoUrl);
                 const defaultThumb = extractedId 
@@ -886,8 +894,8 @@
                     duration: newLesson.duration || "45 دقيقة",
                     videoId: extractedId,
                     thumbnail: newLesson.thumbnail.trim() || defaultThumb,
-                    price: Number(newLesson.price) || 0,
-                    isFree: newLesson.isFree,
+                    price: lessonPrice,
+                    isFree: lessonPrice === 0,
                     pdfUrl: newLesson.pdfUrl.trim() || "https://drive.google.com/",
                     quizQuestion: newLesson.quizQuestion.trim() || "ما هي النتيجة المستفادة من تطبيق هذه الحصة؟",
                     quizOptions: [
@@ -1156,8 +1164,14 @@
                                                     <label className="block text-xs text-slate-400 mb-1.5 font-bold">5. سعر الحصة منفردة (ج.م):</label>
                                                     <input
                                                         type="number"
+                                                        min="0"
+                                                        step="1"
                                                         value={newLesson.price}
-                                                        onChange={e => setNewLesson({ ...newLesson, price: e.target.value })}
+                                                        onChange={e => setNewLesson({
+                                                            ...newLesson,
+                                                            price: e.target.value,
+                                                            isFree: e.target.value !== "" && Number(e.target.value) === 0
+                                                        })}
                                                         className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
                                                     />
                                                 </div>
@@ -1182,16 +1196,9 @@
                                                     />
                                                 </div>
                                                 <div className="flex items-center gap-3 pt-6">
-                                                    <input
-                                                        type="checkbox"
-                                                        id="comprehensiveFreeCheck"
-                                                        checked={newLesson.isFree}
-                                                        onChange={e => setNewLesson({ ...newLesson, isFree: e.target.checked })}
-                                                        className="w-5 h-5 accent-cyan-500"
-                                                    />
-                                                    <label htmlFor="comprehensiveFreeCheck" className="text-sm font-bold text-slate-200 cursor-pointer">
-                                                        حصة مجانية تجريبية مفتوحة للجميع بدون كود
-                                                    </label>
+                                                    <span className={`text-sm font-bold px-3 py-2 rounded-lg ${Number(newLesson.price) === 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300"}`}>
+                                                        {Number(newLesson.price) === 0 ? "✓ الحصة مجانية تلقائيًا لأن سعرها صفر" : "🔒 الحصة مدفوعة تلقائيًا"}
+                                                    </span>
                                                 </div>
                                             </div>
 
